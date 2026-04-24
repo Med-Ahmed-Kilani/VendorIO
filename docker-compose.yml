@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: vendorio
+      POSTGRES_PASSWORD: vendorio
+      POSTGRES_DB: vendorio_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/seed_data.sql:/docker-entrypoint-initdb.d/seed_data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vendorio -d vendorio_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      target: backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://vendorio:vendorio@postgres:5432/vendorio_db
+      FASTAPI_ENV: development
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+  dashboard:
+    build:
+      context: .
+      target: dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      API_BASE_URL: http://backend:8000/api/v1
+    depends_on:
+      - backend
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:

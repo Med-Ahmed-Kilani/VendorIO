@@ -1,0 +1,31 @@
+site_name: VendorIO Documentation
+site_description: Small Business E-Commerce Analytics Platform
+site_author: Ahmed
+repo_url: https://github.com/your-org/vendorio
+
+theme:
+  name: material
+  palette:
+    primary: blue
+    accent: blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - API Reference: api_reference.md
+  - Development: development.md
+  - Deployment: deployment.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - toc:
+      permalink: true

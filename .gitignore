@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Distribution / packaging
+*.manifest
+*.spec
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# ML model artifacts
+*.pkl
+*.joblib
+models/saved/
+
+# Alembic
+# (keep migrations, ignore generated files)
+
+# Docker
+.dockerignore
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.production

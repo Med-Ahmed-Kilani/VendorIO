@@ -1,0 +1,21 @@
+/* InventoryOS custom Streamlit theme */
+[data-testid="stMetric"] {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+}
+
+.stAlert {
+    border-radius: 8px;
+}
+
+div[data-testid="stDataFrame"] {
+    border-radius: 8px;
+    overflow: hidden;
+}
