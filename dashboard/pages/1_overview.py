@@ -1,21 +1,12 @@
 """Page 1: Business Overview — KPIs, revenue trend, top products."""
 import streamlit as st
-from pathlib import Path
-from dashboard.config import PAGE_TITLE, PAGE_ICON
 from dashboard.components.kpi_cards import kpi_row, kpi_secondary
 from dashboard.components.charts import revenue_trend_chart, top_products_chart
 from dashboard.components.sidebar import render_date_filters, render_sidebar_info
 from dashboard.utils.cache import cached_kpis, cached_revenue_trend, cached_customer_segments
 from dashboard.utils.formatters import fmt_currency
 
-st.set_page_config(page_title=f"Overview — {PAGE_TITLE}", page_icon=PAGE_ICON, layout="wide")
-
-css_path = Path(__file__).parent.parent / "styles" / "theme.css"
-if css_path.exists():
-    st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
-
 # --- Sidebar ---
-st.sidebar.title(f"{PAGE_ICON} {PAGE_TITLE}")
 start_date, end_date = render_date_filters()
 render_sidebar_info()
 

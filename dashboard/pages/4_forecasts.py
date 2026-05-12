@@ -1,19 +1,10 @@
 """Page 4: Demand Forecasts — revenue + product-level forecasts."""
 import streamlit as st
-from pathlib import Path
-from dashboard.config import PAGE_TITLE, PAGE_ICON
 from dashboard.components.charts import forecast_chart
 from dashboard.components.sidebar import render_sidebar_info
 from dashboard.utils.cache import cached_revenue_forecast, cached_products
 from dashboard.utils import api_client
 
-st.set_page_config(page_title=f"Forecasts — {PAGE_TITLE}", page_icon=PAGE_ICON, layout="wide")
-
-css_path = Path(__file__).parent.parent / "styles" / "theme.css"
-if css_path.exists():
-    st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
-
-st.sidebar.title(f"{PAGE_ICON} {PAGE_TITLE}")
 weeks_ahead = st.sidebar.slider("Weeks to forecast", 1, 12, 4)
 render_sidebar_info()
 

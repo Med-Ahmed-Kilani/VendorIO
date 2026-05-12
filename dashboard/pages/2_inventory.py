@@ -1,21 +1,12 @@
 """Page 2: Inventory Optimization — stock levels, reorder alerts, holding costs."""
 import streamlit as st
 import pandas as pd
-from pathlib import Path
-from dashboard.config import PAGE_TITLE, PAGE_ICON
 from dashboard.components.charts import inventory_heatmap, holding_cost_chart
 from dashboard.components.tables import inventory_table
 from dashboard.components.sidebar import render_sidebar_info
 from dashboard.utils.cache import cached_inventory_status
 from dashboard.utils.formatters import fmt_currency, fmt_number
 
-st.set_page_config(page_title=f"Inventory — {PAGE_TITLE}", page_icon=PAGE_ICON, layout="wide")
-
-css_path = Path(__file__).parent.parent / "styles" / "theme.css"
-if css_path.exists():
-    st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
-
-st.sidebar.title(f"{PAGE_ICON} {PAGE_TITLE}")
 render_sidebar_info()
 
 st.title("📦 Inventory Optimization")

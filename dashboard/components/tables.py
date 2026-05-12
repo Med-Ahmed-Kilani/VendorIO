@@ -25,7 +25,11 @@ def inventory_table(inventory: list[dict]) -> None:
     display["Needs Reorder"] = display["Needs Reorder"].apply(lambda x: "⚠️ Yes" if x else "")
 
     def highlight_status(row):
-        color_map = {"critical": "background-color: #FEE2E2", "warning": "background-color: #FEF3C7", "ok": ""}
+        color_map = {
+            "critical": "background-color: rgba(220, 38, 38, 0.18)",
+            "warning": "background-color: rgba(202, 138, 4, 0.18)",
+            "ok": "",
+        }
         color = color_map.get(row["Status"], "")
         return [color] * len(row)
 
@@ -55,9 +59,9 @@ def profitability_table(profitability: list[dict]) -> None:
         try:
             val = float(str(row["Margin %"]).replace("%", "").replace("N/A", "50"))
             if val < 10:
-                return ["background-color: #FEE2E2"] * len(row)
+                return ["background-color: rgba(220, 38, 38, 0.18)"] * len(row)
             if val < 20:
-                return ["background-color: #FEF3C7"] * len(row)
+                return ["background-color: rgba(202, 138, 4, 0.18)"] * len(row)
         except (ValueError, TypeError):
             pass
         return [""] * len(row)

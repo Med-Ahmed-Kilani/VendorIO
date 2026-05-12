@@ -1,3 +1,12 @@
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path so `models.*` is importable when the
+# server is started from the backend/ subdirectory.
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -12,6 +21,7 @@ from backend.api.v1.inventory import router as inventory_router
 from backend.api.v1.metrics import router as metrics_router
 from backend.api.v1.forecasts import router as forecasts_router
 from backend.api.v1.recommendations import router as recommendations_router
+from backend.api.v1.import_data import router as import_router
 
 logger = get_logger(__name__)
 
@@ -43,6 +53,7 @@ app.include_router(inventory_router, prefix="/api/v1")
 app.include_router(metrics_router, prefix="/api/v1")
 app.include_router(forecasts_router, prefix="/api/v1")
 app.include_router(recommendations_router, prefix="/api/v1")
+app.include_router(import_router, prefix="/api/v1")
 
 
 @app.exception_handler(Exception)

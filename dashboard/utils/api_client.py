@@ -19,6 +19,24 @@ def _get(endpoint: str, params: Optional[dict] = None) -> Any:
         return None
 
 
+def _post_file(endpoint: str, file_bytes: bytes, filename: str) -> Any:
+    url = f"{API_BASE_URL}{endpoint}"
+    try:
+        resp = httpx.post(
+            url,
+            files={"file": (filename, file_bytes, "text/csv")},
+            timeout=60.0,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except httpx.HTTPStatusError as e:
+        st.error(f"API error {e.response.status_code}: {e.response.text}")
+        return None
+    except httpx.RequestError:
+        st.error(f"Cannot connect to backend at {API_BASE_URL}")
+        return None
+
+
 def _post(endpoint: str, payload: dict) -> Any:
     url = f"{API_BASE_URL}{endpoint}"
     try:
@@ -91,3 +109,25 @@ def get_products() -> Optional[dict]:
 
 def get_customer_segments() -> Optional[list]:
     return _get("/metrics/customer-segments")
+
+
+def import_products_csv(file_bytes: bytes, filename: str) -> Optional[dict]:
+    return _post_file("/import/products", file_bytes, filename)
+
+
+def import_orders_csv(file_bytes: bytes, filename: str) -> Optional[dict]:
+    return _post_file("/import/orders", file_bytes, filename)
+
+
+def clear_all_data() -> Optional[dict]:
+    url = f"{API_BASE_URL}/import/clear"
+    try:
+        resp = httpx.post(url, params={"confirm": True}, timeout=30.0)
+        resp.raise_for_status()
+        return resp.json()
+    except httpx.HTTPStatusError as e:
+        st.error(f"API error {e.response.status_code}: {e.response.text}")
+        return None
+    except httpx.RequestError:
+        st.error(f"Cannot connect to backend at {API_BASE_URL}")
+        return None

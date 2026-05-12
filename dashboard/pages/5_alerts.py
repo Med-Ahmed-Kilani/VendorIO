@@ -1,19 +1,11 @@
 """Page 5: Smart Alerts & Recommendations."""
 import streamlit as st
-from pathlib import Path
-from dashboard.config import PAGE_TITLE, PAGE_ICON, URGENCY_EMOJI
+from dashboard.config import URGENCY_EMOJI
 from dashboard.components.tables import recommendations_table
 from dashboard.components.sidebar import render_sidebar_info
 from dashboard.utils.cache import cached_recommendations
 from dashboard.utils.formatters import fmt_currency
 
-st.set_page_config(page_title=f"Alerts — {PAGE_TITLE}", page_icon=PAGE_ICON, layout="wide")
-
-css_path = Path(__file__).parent.parent / "styles" / "theme.css"
-if css_path.exists():
-    st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
-
-st.sidebar.title(f"{PAGE_ICON} {PAGE_TITLE}")
 limit = st.sidebar.slider("Max recommendations", 5, 50, 20)
 render_sidebar_info()
 

@@ -1,20 +1,11 @@
 """Page 3: Cost Analysis — margins, COGS, holding costs, savings forecast."""
 import streamlit as st
-from pathlib import Path
-from dashboard.config import PAGE_TITLE, PAGE_ICON
 from dashboard.components.charts import margin_chart, cost_breakdown_chart
 from dashboard.components.tables import profitability_table
 from dashboard.components.sidebar import render_date_filters, render_sidebar_info
 from dashboard.utils.cache import cached_cost_summary, cached_profitability
 from dashboard.utils.formatters import fmt_currency, fmt_pct
 
-st.set_page_config(page_title=f"Costs — {PAGE_TITLE}", page_icon=PAGE_ICON, layout="wide")
-
-css_path = Path(__file__).parent.parent / "styles" / "theme.css"
-if css_path.exists():
-    st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
-
-st.sidebar.title(f"{PAGE_ICON} {PAGE_TITLE}")
 start_date, end_date = render_date_filters()
 render_sidebar_info()
 
