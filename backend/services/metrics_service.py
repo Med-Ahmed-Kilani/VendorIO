@@ -102,7 +102,7 @@ def get_kpi_metrics(
     # Estimate profit using avg margin across all products
     products = db.query(Product).filter(Product.deleted_at.is_(None)).all()
     margins = [p.margin for p in products if p.margin is not None]
-    avg_margin = sum(margins) / len(margins) if margins else 0.3
+    avg_margin = float(sum(margins) / len(margins)) if margins else 0.3
     estimated_profit = total_revenue * avg_margin
 
     return {

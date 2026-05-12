@@ -32,5 +32,5 @@ class Product(Base, TimestampMixin):
     @property
     def margin(self) -> Optional[float]:
         if self.cost_per_unit and self.unit_price and self.unit_price > 0:
-            return (self.unit_price - self.cost_per_unit) / self.unit_price
+            return float((self.unit_price - self.cost_per_unit) / self.unit_price)
         return None

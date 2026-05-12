@@ -100,7 +100,7 @@ def get_inventory_status(db: Session) -> list[InventoryStatusItem]:
         dts = days_to_stockout(p.current_stock, avg_daily)
         reorder = p.reorder_point or calculate_reorder_point(avg_daily, p.lead_time_days)
         holding_cost_monthly = (
-            (p.cost_per_unit or p.unit_price) * p.current_stock * HOLDING_COST_RATE / 12
+            float(p.cost_per_unit or p.unit_price) * p.current_stock * HOLDING_COST_RATE / 12
             if p.current_stock > 0
             else 0.0
         )
@@ -137,10 +137,10 @@ def get_product_health(db: Session, product_id: int) -> Optional[InventoryHealth
     avg_daily = _avg_daily_sales(db, product_id)
     dts = days_to_stockout(p.current_stock, avg_daily)
     holding_cost_monthly = (
-        (p.cost_per_unit or p.unit_price) * p.current_stock * HOLDING_COST_RATE / 12
+        float(p.cost_per_unit or p.unit_price) * p.current_stock * HOLDING_COST_RATE / 12
     )
     annual_demand = avg_daily * 365
-    holding_per_unit = (p.cost_per_unit or p.unit_price) * HOLDING_COST_RATE
+    holding_per_unit = float(p.cost_per_unit or p.unit_price) * HOLDING_COST_RATE
     eoq = calculate_eoq(annual_demand, ORDERING_COST, holding_per_unit)
 
     all_products = db.query(Product).filter(Product.deleted_at.is_(None)).all()

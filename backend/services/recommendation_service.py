@@ -106,7 +106,7 @@ def generate_recommendations(db: Session, limit: int = 20) -> list[dict]:
                     ORDERING_COST,
                     float(p.cost_per_unit or p.unit_price) * HOLDING_COST_RATE,
                 )
-                savings = (p.cost_per_unit or p.unit_price) * eoq * 0.05  # 5% bulk discount
+                savings = float(p.cost_per_unit or p.unit_price) * eoq * 0.05  # 5% bulk discount
                 if savings > 50:
                     recommendations.append({
                         "type": "bulk_order",

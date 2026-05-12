@@ -3,7 +3,24 @@
     "allow": [
       "Bash(python3 -c ' *)",
       "Bash(python3 -m py_compile backend/models/base.py)",
-      "Bash(python3 -m py_compile backend/models/product.py)"
+      "Bash(python3 -m py_compile backend/models/product.py)",
+      "Bash(curl -sSL https://install.python-poetry.org)",
+      "Bash(python3 -)",
+      "Bash(pip3 --version)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(pip3 install *)",
+      "Bash(brew install *)",
+      "Bash(python3 -m venv venv)",
+      "Bash(chmod a+r /opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/ensurepip/_bundled/pip-25.3-py3-none-any.whl)",
+      "Bash(python3 -m venv venv --without-pip)",
+      "Bash(curl -sS https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py)",
+      "Bash(venv/bin/python3 /tmp/get-pip.py)",
+      "Bash(venv/bin/pip install *)",
+      "Bash(venv/bin/python3 -c ' *)",
+      "Bash(docker-compose up *)",
+      "Bash(docker-compose ps *)",
+      "Bash(venv/bin/python3 scripts/init_db.py)",
+      "Bash(venv/bin/python3 scripts/load_sample_data.py)"
     ]
   }
 }
