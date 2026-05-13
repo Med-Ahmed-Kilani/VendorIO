@@ -153,6 +153,33 @@ def _get_or_create_product(db: Session, name: str, unit_price: float) -> Product
     return product
 
 
+def _refresh_customer_stats(db: Session) -> None:
+    """Recompute denormalised total_spent / order_count on every customer."""
+    from sqlalchemy import func as _func
+    rows = (
+        db.query(
+            Order.customer_id,
+            _func.count(Order.id).label("order_count"),
+            _func.sum(Order.total_amount).label("total_spent"),
+            _func.min(Order.order_date).label("first_order"),
+        )
+        .filter(Order.customer_id.isnot(None), Order.status == "completed")
+        .group_by(Order.customer_id)
+        .all()
+    )
+    for row in rows:
+        customer = db.query(Customer).filter(Customer.id == row.customer_id).first()
+        if customer:
+            customer.order_count = row.order_count
+            customer.total_spent = float(row.total_spent or 0)
+            if row.first_order:
+                customer.first_order_date = (
+                    row.first_order.date()
+                    if hasattr(row.first_order, "date")
+                    else row.first_order
+                )
+
+
 def _get_or_create_customer(db: Session, email: str) -> Customer:
     customer = db.query(Customer).filter(Customer.email == email).first()
     if not customer:
@@ -260,6 +287,8 @@ async def import_orders(
             skipped += 1
 
     db.commit()
+    _refresh_customer_stats(db)
+    db.commit()
     logger.info(
         f"Orders import: orders={orders_created} items={items_created} skipped={skipped}"
     )
@@ -267,6 +296,85 @@ async def import_orders(
         "orders_created": orders_created,
         "items_created": items_created,
         "skipped": skipped,
+        "errors": errors[:20],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Inventory (stock levels for existing products)
+# ---------------------------------------------------------------------------
+
+@router.post("/inventory")
+async def import_inventory(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Update stock / inventory fields for existing products matched by name.
+
+    Required columns: product_name
+    Optional columns: current_stock, reorder_point, lead_time_days,
+                      cost_per_unit, unit_price, category
+    """
+    df = _parse_csv(await file.read())
+
+    if "product_name" not in df.columns:
+        raise HTTPException(status_code=400, detail="Missing required column: product_name")
+
+    updated = skipped = 0
+    not_found: list[str] = []
+    errors: list[str] = []
+
+    for i, row in df.iterrows():
+        row_num = int(i) + 2
+        try:
+            name = _opt_str(row, "product_name")
+            if not name:
+                skipped += 1
+                continue
+
+            product = db.query(Product).filter(Product.name == name).first()
+            if not product:
+                not_found.append(name)
+                skipped += 1
+                continue
+
+            stock = _opt_int(row, "current_stock")
+            if stock is not None:
+                product.current_stock = stock
+
+            rp = _opt_int(row, "reorder_point")
+            if rp is not None:
+                product.reorder_point = rp
+
+            lt = _opt_int(row, "lead_time_days")
+            if lt is not None:
+                product.lead_time_days = lt
+
+            cpu = _opt_float(row, "cost_per_unit")
+            if cpu is not None:
+                product.cost_per_unit = cpu
+
+            up = _opt_float(row, "unit_price")
+            if up is not None:
+                product.unit_price = up
+
+            cat = _opt_str(row, "category")
+            if cat:
+                product.category = cat
+
+            updated += 1
+
+        except Exception as e:
+            errors.append(f"Row {row_num}: {e}")
+            skipped += 1
+
+    db.commit()
+    logger.info(f"Inventory import: updated={updated} skipped={skipped} not_found={len(not_found)}")
+    return {
+        "updated": updated,
+        "skipped": skipped,
+        "not_found": not_found[:20],
         "errors": errors[:20],
     }
 

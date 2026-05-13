@@ -111,6 +111,10 @@ def get_customer_segments() -> Optional[list]:
     return _get("/metrics/customer-segments")
 
 
+def import_inventory_csv(file_bytes: bytes, filename: str) -> Optional[dict]:
+    return _post_file("/import/inventory", file_bytes, filename)
+
+
 def import_products_csv(file_bytes: bytes, filename: str) -> Optional[dict]:
     return _post_file("/import/products", file_bytes, filename)
 

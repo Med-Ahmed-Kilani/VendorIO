@@ -15,8 +15,16 @@ HOLDING_COST_RATE = settings.holding_cost_rate  # fraction of unit cost per year
 ORDERING_COST = settings.ordering_cost  # $ per order
 
 
+def _latest_order_date(db: Session) -> datetime:
+    """Return the most recent order date in the DB, falling back to now."""
+    latest = db.query(func.max(Order.order_date)).scalar()
+    return latest if latest else datetime.utcnow()
+
+
 def _avg_daily_sales(db: Session, product_id: int, lookback_days: int = 90) -> float:
-    since = datetime.utcnow() - timedelta(days=lookback_days)
+    # Anchor to the latest order date so historical datasets work correctly.
+    anchor = _latest_order_date(db)
+    since = anchor - timedelta(days=lookback_days)
     result = (
         db.query(func.sum(OrderItem.quantity))
         .join(Order, OrderItem.order_id == Order.id)
