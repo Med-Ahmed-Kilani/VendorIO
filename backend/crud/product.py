@@ -1,49 +1,42 @@
-from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
 from backend.crud.base import CRUDBase
-from backend.models.product import Product
+from backend.models.final_product import FinalProduct
 from backend.schemas.product import ProductCreate, ProductUpdate
 
 
-class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
-    def get_by_category(self, db: Session, category: str, skip: int = 0, limit: int = 100) -> list[Product]:
+class CRUDProduct(CRUDBase[FinalProduct, ProductCreate, ProductUpdate]):
+    def get_by_category(self, db: Session, category: str, skip: int = 0, limit: int = 100) -> list[FinalProduct]:
         return (
-            db.query(Product)
-            .filter(Product.category == category, Product.deleted_at.is_(None))
+            db.query(FinalProduct)
+            .filter(FinalProduct.category == category)
             .offset(skip)
             .limit(limit)
             .all()
         )
 
-    def get_active(self, db: Session, skip: int = 0, limit: int = 100) -> list[Product]:
-        return (
-            db.query(Product)
-            .filter(Product.deleted_at.is_(None))
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+    def get_active(self, db: Session, skip: int = 0, limit: int = 100) -> list[FinalProduct]:
+        return db.query(FinalProduct).offset(skip).limit(limit).all()
 
     def count_active(self, db: Session) -> int:
-        return db.query(Product).filter(Product.deleted_at.is_(None)).count()
-
-    def soft_delete(self, db: Session, *, product_id: int) -> Optional[Product]:
-        p = self.get(db, product_id)
-        if p:
-            p.deleted_at = datetime.utcnow()
-            db.commit()
-            db.refresh(p)
-        return p
+        return db.query(FinalProduct).count()
 
     def get_categories(self, db: Session) -> list[str]:
         rows = (
-            db.query(Product.category)
-            .filter(Product.category.isnot(None), Product.deleted_at.is_(None))
+            db.query(FinalProduct.category)
+            .filter(FinalProduct.category.isnot(None))
             .distinct()
             .all()
         )
         return [r[0] for r in rows]
 
+    # soft_delete kept for API compatibility but now does a hard delete
+    def soft_delete(self, db: Session, *, product_id: int) -> Optional[FinalProduct]:
+        p = self.get(db, product_id)
+        if p:
+            db.delete(p)
+            db.commit()
+        return p
 
-product = CRUDProduct(Product)
+
+product = CRUDProduct(FinalProduct)

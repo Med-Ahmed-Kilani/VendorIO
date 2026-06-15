@@ -1,4 +1,4 @@
-"""Page 0: Import Data — upload products and orders via CSV."""
+"""Page 0: Import Data — upload CSVs for all 8 schema tables."""
 import io
 from typing import Optional
 import streamlit as st
@@ -7,123 +7,157 @@ from dashboard.utils import api_client
 from dashboard.utils.cache import cached_inventory_status
 
 # ---------------------------------------------------------------------------
-# Field definitions with auto-detection aliases
+# Field definitions
 # ---------------------------------------------------------------------------
 
-PRODUCTS_FIELDS = [
-    {"name": "name",           "label": "Product Name",    "required": True,
-     "aliases": ["product_name", "title", "product", "item_name", "product_title", "item", "description"]},
-    {"name": "unit_price",     "label": "Unit Price",      "required": True,
-     "aliases": ["price", "sale_price", "selling_price", "retail_price", "list_price"]},
-    {"name": "category",       "label": "Category",        "required": False,
-     "aliases": ["product_category", "type", "dept", "department", "subcategory"]},
-    {"name": "cost_per_unit",  "label": "Cost Per Unit",   "required": False,
-     "aliases": ["cost", "cogs", "purchase_price", "buy_price", "cost_price"]},
-    {"name": "current_stock",  "label": "Current Stock",   "required": False,
-     "aliases": ["stock", "stock_quantity", "qty", "inventory", "stock_level", "units_in_stock", "quantity"]},
-    {"name": "reorder_point",  "label": "Reorder Point",   "required": False,
-     "aliases": ["min_stock", "reorder_level", "min_quantity", "safety_stock"]},
-    {"name": "lead_time_days", "label": "Lead Time (days)", "required": False,
-     "aliases": ["lead_time", "days_lead_time", "supplier_lead_time"]},
-]
-
-# Inventory (stock update for existing products)
-INVENTORY_FIELDS = [
-    {"name": "product_name",   "label": "Product Name",     "required": True,
-     "aliases": ["name", "product", "item", "title", "item_name", "product_title"]},
-    {"name": "current_stock",  "label": "Current Stock",    "required": True,
-     "aliases": ["stock", "stock_quantity", "qty", "inventory", "stock_level",
-                 "units_in_stock", "quantity_on_hand", "on_hand"]},
-    {"name": "reorder_point",  "label": "Reorder Point",    "required": False,
-     "aliases": ["min_stock", "reorder_level", "minimum_stock", "safety_stock", "min_quantity"]},
-    {"name": "cost_per_unit",  "label": "Cost Per Unit",    "required": False,
-     "aliases": ["cost", "cogs", "purchase_price", "buy_price", "cost_price", "unit_cost"]},
+RAW_MATERIALS_FIELDS = [
+    {"name": "name",           "label": "Material Name",    "required": True,
+     "aliases": ["material_name", "ingredient", "item", "material"]},
     {"name": "category",       "label": "Category",         "required": False,
-     "aliases": ["product_category", "type", "dept", "department", "subcategory"]},
+     "aliases": ["type", "dept", "group"]},
+    {"name": "unit",           "label": "Unit",             "required": False,
+     "aliases": ["unit_of_measure", "uom", "measurement_unit"]},
+    {"name": "cost_per_unit",  "label": "Cost per Unit",    "required": False,
+     "aliases": ["cost", "unit_cost", "purchase_price", "buy_price"]},
+    {"name": "current_stock",  "label": "Current Stock",    "required": False,
+     "aliases": ["stock", "qty", "quantity", "inventory", "stock_level"]},
+    {"name": "reorder_point",  "label": "Reorder Point",    "required": False,
+     "aliases": ["min_stock", "reorder_level", "safety_stock"]},
     {"name": "lead_time_days", "label": "Lead Time (days)", "required": False,
      "aliases": ["lead_time", "days_lead_time", "supplier_lead_time"]},
-    {"name": "unit_price",     "label": "Unit Price",       "required": False,
+]
+
+PRODUCTS_FIELDS = [
+    {"name": "name",       "label": "Product Name", "required": True,
+     "aliases": ["product_name", "title", "item_name", "product_title"]},
+    {"name": "unit_price", "label": "Unit Price",   "required": True,
      "aliases": ["price", "sale_price", "selling_price", "retail_price"]},
+    {"name": "category",   "label": "Category",     "required": False,
+     "aliases": ["product_category", "type", "dept"]},
 ]
 
-INVENTORY_TEMPLATE = pd.DataFrame([
-    {"product_name": "Americano", "current_stock": 150, "reorder_point": 30,
-     "cost_per_unit": 0.80, "category": "Coffee", "lead_time_days": 3},
-    {"product_name": "Flat White", "current_stock": 120, "reorder_point": 25,
-     "cost_per_unit": 1.20, "category": "Coffee", "lead_time_days": 3},
-])
+RECIPES_FIELDS = [
+    {"name": "product_id", "label": "Product ID",   "required": True,
+     "aliases": ["product", "final_product_id"]},
+    {"name": "unit_cost",  "label": "Recipe Cost",  "required": True,
+     "aliases": ["cost", "cost_per_unit", "recipe_cost", "total_cost"]},
+    {"name": "size",       "label": "Size (S/M/L)", "required": False,
+     "aliases": ["variant", "portion_size", "drink_size"]},
+]
 
-# Flat single-file orders
-ORDERS_FLAT_FIELDS = [
+RECIPE_ITEMS_FIELDS = [
+    {"name": "recipe_id",        "label": "Recipe ID",          "required": True,
+     "aliases": ["recipe"]},
+    {"name": "material_id",      "label": "Material ID",        "required": True,
+     "aliases": ["ingredient_id", "raw_material_id", "material"]},
+    {"name": "quantity_needed",  "label": "Quantity Needed",    "required": True,
+     "aliases": ["qty", "quantity", "amount", "quantity_per_unit"]},
+    {"name": "unit",             "label": "Unit",               "required": False,
+     "aliases": ["unit_of_measure", "uom"]},
+    {"name": "notes",            "label": "Notes",              "required": False,
+     "aliases": ["note", "comment", "description"]},
+]
+
+ORDERS_FIELDS = [
     {"name": "order_date",     "label": "Order Date",     "required": True,
-     "aliases": ["date", "created_at", "invoice_date", "purchase_date", "order_created", "transaction_date"]},
-    {"name": "product_name",   "label": "Product Name",   "required": True,
-     "aliases": ["name", "product", "item", "description", "item_name", "product_title", "sku", "product_id"]},
-    {"name": "quantity",       "label": "Quantity",       "required": True,
-     "aliases": ["qty", "units", "amount", "ordered_quantity", "order_qty", "units_ordered"]},
-    {"name": "order_id",       "label": "Order ID",       "required": False,
-     "aliases": ["invoice_no", "invoice_id", "order_no", "order_number", "id", "transaction_id", "reference"]},
-    {"name": "customer_email", "label": "Customer Email", "required": False,
-     "aliases": ["email", "customer", "buyer_email", "user_email", "customer_email_address"]},
-    {"name": "unit_price",     "label": "Unit Price",     "required": False,
-     "aliases": ["price", "sale_price", "item_price", "unit_cost", "selling_price", "unit_sale_price"]},
-    {"name": "status",         "label": "Status",         "required": False,
+     "aliases": ["date", "created_at", "invoice_date", "transaction_date"]},
+    {"name": "product_id",    "label": "Product ID",     "required": True,
+     "aliases": ["product", "final_product_id", "item_id"]},
+    {"name": "quantity",      "label": "Quantity",       "required": True,
+     "aliases": ["qty", "units", "ordered_quantity"]},
+    {"name": "order_id",      "label": "Order ID",       "required": False,
+     "aliases": ["invoice_no", "invoice_id", "order_no", "order_number", "transaction_id"]},
+    {"name": "size",          "label": "Size (S/M/L)",   "required": False,
+     "aliases": ["variant", "drink_size", "portion_size"]},
+    {"name": "customer_email","label": "Customer Email", "required": False,
+     "aliases": ["email", "buyer_email", "user_email"]},
+    {"name": "unit_price",    "label": "Unit Price",     "required": False,
+     "aliases": ["price", "sale_price", "selling_price"]},
+    {"name": "status",        "label": "Status",         "required": False,
      "aliases": ["order_status", "state", "fulfillment_status"]},
 ]
 
-# Two-file relational: order headers file
-ORDERS_HEADER_FIELDS = [
-    {"name": "order_id",       "label": "Order ID",       "required": True,
-     "aliases": ["invoice_no", "invoice_id", "order_no", "order_number", "id", "transaction_id", "reference", "name"]},
-    {"name": "order_date",     "label": "Order Date",     "required": True,
-     "aliases": ["date", "created_at", "invoice_date", "purchase_date", "order_created", "transaction_date"]},
-    {"name": "customer_email", "label": "Customer Email", "required": False,
-     "aliases": ["email", "customer", "buyer_email", "user_email"]},
-    {"name": "status",         "label": "Status",         "required": False,
-     "aliases": ["order_status", "state", "fulfillment_status"]},
+TRANSACTIONS_FIELDS = [
+    {"name": "order_id",       "label": "Order ID",        "required": True,
+     "aliases": ["order", "invoice_id", "order_no"]},
+    {"name": "amount_paid",    "label": "Amount Paid",     "required": True,
+     "aliases": ["amount", "payment_amount", "total_paid", "paid"]},
+    {"name": "payment_method", "label": "Payment Method",  "required": False,
+     "aliases": ["method", "payment_type", "payment_mode"]},
 ]
 
-# Two-file relational: line items file
+RAW_MATERIAL_INVENTORY_FIELDS = [
+    {"name": "material_id",   "label": "Material ID",    "required": False,
+     "aliases": ["id", "ingredient_id", "mat_id"]},
+    {"name": "material_name", "label": "Material Name",  "required": False,
+     "aliases": ["name", "ingredient", "item", "material"]},
+    {"name": "current_stock", "label": "Current Stock",  "required": True,
+     "aliases": ["stock", "qty", "quantity", "inventory", "stock_level", "on_hand"]},
+]
+
 ORDER_ITEMS_FIELDS = [
-    {"name": "order_id",     "label": "Order ID (join key)", "required": True,
-     "aliases": ["invoice_no", "invoice_id", "order_no", "order_number", "id", "transaction_id", "reference", "name"]},
-    {"name": "product_name", "label": "Product Name",        "required": True,
-     "aliases": ["name", "product", "item", "description", "item_name", "sku", "product_id", "product_title"]},
-    {"name": "quantity",     "label": "Quantity",             "required": True,
-     "aliases": ["qty", "units", "amount", "ordered_quantity", "order_qty", "units_ordered", "line_quantity"]},
-    {"name": "unit_price",   "label": "Unit Price",           "required": False,
-     "aliases": ["price", "sale_price", "item_price", "unit_cost", "selling_price", "line_price"]},
+    {"name": "order_id",    "label": "Order ID",      "required": True,
+     "aliases": ["invoice_no", "invoice_id", "order_no", "order_number", "transaction_id"]},
+    {"name": "product_id",  "label": "Product ID",    "required": True,
+     "aliases": ["product", "final_product_id", "item_id"]},
+    {"name": "quantity",    "label": "Quantity",      "required": True,
+     "aliases": ["qty", "units", "ordered_quantity"]},
+    {"name": "size",        "label": "Size (S/M/L)",  "required": False,
+     "aliases": ["variant", "drink_size", "portion_size"]},
+    {"name": "unit_price",  "label": "Unit Price",    "required": False,
+     "aliases": ["price", "sale_price", "selling_price", "item_price"]},
 ]
 
 # ---------------------------------------------------------------------------
 # CSV templates
 # ---------------------------------------------------------------------------
 
+RAW_MATERIALS_TEMPLATE = pd.DataFrame([
+    {"name": "Arabica Beans",    "category": "Coffee", "unit": "grams", "cost_per_unit": 0.0095, "current_stock": 20000, "reorder_point": 5000, "lead_time_days": 7},
+    {"name": "Whole Milk",       "category": "Dairy",  "unit": "ml",    "cost_per_unit": 0.0012, "current_stock": 20000, "reorder_point": 5000, "lead_time_days": 2},
+    {"name": "Matcha Powder",    "category": "Tea",    "unit": "grams", "cost_per_unit": 0.0500, "current_stock": 3000,  "reorder_point": 1000, "lead_time_days": 7},
+])
+
 PRODUCTS_TEMPLATE = pd.DataFrame([
-    {"name": "Arabica Coffee Beans 1kg", "category": "Coffee", "unit_price": 24.99,
-     "cost_per_unit": 9.50, "current_stock": 80, "reorder_point": 20, "lead_time_days": 7},
-    {"name": "Green Tea 200g", "category": "Tea", "unit_price": 8.99,
-     "cost_per_unit": 2.50, "current_stock": 5, "reorder_point": 15, "lead_time_days": 5},
+    {"name": "Espresso",     "category": "Coffee", "unit_price": 3.50},
+    {"name": "Flat White",   "category": "Coffee", "unit_price": 4.20},
+    {"name": "Matcha Latte", "category": "Tea",    "unit_price": 4.50},
 ])
 
-ORDERS_FLAT_TEMPLATE = pd.DataFrame([
-    {"order_id": "ORD-001", "order_date": "2025-01-15", "customer_email": "alice@example.com",
-     "product_name": "Arabica Coffee Beans 1kg", "quantity": 2, "unit_price": 24.99, "status": "completed"},
-    {"order_id": "ORD-001", "order_date": "2025-01-15", "customer_email": "alice@example.com",
-     "product_name": "Green Tea 200g", "quantity": 1, "unit_price": 8.99, "status": "completed"},
-    {"order_id": "ORD-002", "order_date": "2025-01-16", "customer_email": "bob@example.com",
-     "product_name": "Arabica Coffee Beans 1kg", "quantity": 3, "unit_price": 24.99, "status": "completed"},
+RECIPES_TEMPLATE = pd.DataFrame([
+    {"product_id": 1, "unit_cost": 0.60, "size": ""},
+    {"product_id": 2, "unit_cost": 0.90, "size": ""},
+    {"product_id": 2, "unit_cost": 0.80, "size": "S"},
+    {"product_id": 2, "unit_cost": 1.05, "size": "L"},
 ])
 
-ORDERS_HEADER_TEMPLATE = pd.DataFrame([
-    {"order_id": "ORD-001", "order_date": "2025-01-15", "customer_email": "alice@example.com", "status": "completed"},
-    {"order_id": "ORD-002", "order_date": "2025-01-16", "customer_email": "bob@example.com",   "status": "completed"},
+RECIPE_ITEMS_TEMPLATE = pd.DataFrame([
+    {"recipe_id": 1, "material_id": 1, "quantity_needed": 18,  "unit": "grams", "notes": ""},
+    {"recipe_id": 2, "material_id": 1, "quantity_needed": 18,  "unit": "grams", "notes": ""},
+    {"recipe_id": 2, "material_id": 2, "quantity_needed": 150, "unit": "ml",    "notes": "steamed"},
+])
+
+ORDERS_TEMPLATE = pd.DataFrame([
+    {"order_id": "ORD-001", "order_date": "2025-01-15", "customer_email": "alice@example.com", "product_id": 1, "quantity": 2, "unit_price": 3.50, "status": "completed"},
+    {"order_id": "ORD-001", "order_date": "2025-01-15", "customer_email": "alice@example.com", "product_id": 2, "quantity": 1, "unit_price": 4.20, "status": "completed"},
+    {"order_id": "ORD-002", "order_date": "2025-01-16", "customer_email": "bob@example.com",   "product_id": 3, "size": "L",  "quantity": 1, "unit_price": 4.80, "status": "completed"},
+])
+
+TRANSACTIONS_TEMPLATE = pd.DataFrame([
+    {"order_id": 1, "amount_paid": 11.90, "payment_method": "card"},
+    {"order_id": 2, "amount_paid":  4.80, "payment_method": "cash"},
+])
+
+RAW_MATERIAL_INVENTORY_TEMPLATE = pd.DataFrame([
+    {"material_id": 1, "material_name": "Arabica Beans", "current_stock": 20000},
+    {"material_id": 2, "material_name": "Whole Milk",    "current_stock": 15000},
+    {"material_id": 3, "material_name": "Matcha Powder", "current_stock": 2500},
 ])
 
 ORDER_ITEMS_TEMPLATE = pd.DataFrame([
-    {"order_id": "ORD-001", "product_name": "Arabica Coffee Beans 1kg", "quantity": 2, "unit_price": 24.99},
-    {"order_id": "ORD-001", "product_name": "Green Tea 200g",           "quantity": 1, "unit_price": 8.99},
-    {"order_id": "ORD-002", "product_name": "Arabica Coffee Beans 1kg", "quantity": 3, "unit_price": 24.99},
+    {"order_id": 1, "product_id": 1, "quantity": 2, "unit_price": 3.50, "size": ""},
+    {"order_id": 1, "product_id": 2, "quantity": 1, "unit_price": 4.20, "size": ""},
+    {"order_id": 2, "product_id": 3, "quantity": 1, "unit_price": 4.80, "size": "L"},
 ])
 
 # ---------------------------------------------------------------------------
@@ -155,10 +189,6 @@ def _render_column_mapper(
     field_defs: list[dict],
     key_prefix: str,
 ) -> Optional[pd.DataFrame]:
-    """
-    Renders column mapping selects. Returns renamed DataFrame or None if
-    required fields are still unmapped.
-    """
     csv_cols = list(df.columns)
     SKIP = "— skip —"
     UNSET = "— select column —"
@@ -206,25 +236,17 @@ def _render_column_mapper(
         st.warning(f"Map required fields before continuing: **{', '.join(unmapped_required)}**")
         return None
 
-    mapped_df = df[list(mapping.keys())].rename(columns=mapping)
-    return mapped_df
+    return df[list(mapping.keys())].rename(columns=mapping)
 
 
-def _render_result_badges(result: dict, mode: str) -> None:
+def _render_upsert_badges(result: dict) -> None:
     st.success("Import complete!")
     cols = st.columns(3)
-    if mode == "products":
-        badges = [
-            ("created", result.get("created", 0),  "#16A34A"),
-            ("updated", result.get("updated", 0),  "#2563EB"),
-            ("skipped", result.get("skipped", 0),  "#CA8A04"),
-        ]
-    else:
-        badges = [
-            ("orders created", result.get("orders_created", 0), "#16A34A"),
-            ("line items",     result.get("items_created", 0),  "#2563EB"),
-            ("skipped",        result.get("skipped", 0),        "#CA8A04"),
-        ]
+    badges = [
+        ("created", result.get("created", 0), "#16A34A"),
+        ("updated", result.get("updated", 0), "#2563EB"),
+        ("skipped", result.get("skipped", 0), "#CA8A04"),
+    ]
     for col, (label, value, color) in zip(cols, badges):
         with col:
             st.markdown(
@@ -240,324 +262,479 @@ def _render_result_badges(result: dict, mode: str) -> None:
                 st.caption(e)
 
 
+def _render_orders_badges(result: dict) -> None:
+    st.success("Import complete!")
+    cols = st.columns(3)
+    badges = [
+        ("orders created", result.get("orders_created", 0), "#16A34A"),
+        ("line items",     result.get("items_created", 0),  "#2563EB"),
+        ("skipped groups", result.get("skipped", 0),        "#CA8A04"),
+    ]
+    for col, (label, value, color) in zip(cols, badges):
+        with col:
+            st.markdown(
+                f"<div style='background:{color}22;border:1px solid {color}55;"
+                f"border-radius:6px;padding:8px 14px;text-align:center'>"
+                f"<div style='font-size:1.6rem;font-weight:700;color:{color}'>{value}</div>"
+                f"<div style='font-size:.85rem'>{label}</div></div>",
+                unsafe_allow_html=True,
+            )
+    if result.get("errors"):
+        with st.expander(f"⚠️ {len(result['errors'])} row errors (recipe missing? import recipes first)"):
+            for e in result["errors"]:
+                st.caption(e)
+
+
+def _upload_section(
+    tab_key: str,
+    field_defs: list[dict],
+    template_df: pd.DataFrame,
+    template_filename: str,
+    description: str,
+    import_fn,
+    import_result_key: str,
+    button_label: str = "✅ Import",
+    badge_fn=_render_upsert_badges,
+) -> None:
+    """Reusable upload + map + import widget."""
+    col_hd, col_dl = st.columns([3, 1])
+    with col_hd:
+        st.caption(description)
+    with col_dl:
+        st.download_button(
+            "⬇️ Download template",
+            data=_to_csv_bytes(template_df),
+            file_name=template_filename,
+            mime="text/csv",
+            use_container_width=True,
+        )
+
+    st.divider()
+    uploaded = st.file_uploader("Upload CSV", type=["csv"], key=f"{tab_key}_upload")
+
+    if uploaded:
+        df = _parse_upload(uploaded)
+        if df is not None:
+            st.markdown(f"**Preview** — {len(df):,} rows · {len(df.columns)} columns")
+            st.dataframe(df.head(5), use_container_width=True, hide_index=True)
+            st.divider()
+
+            mapped_df = _render_column_mapper(df, field_defs, key_prefix=tab_key)
+
+            if mapped_df is not None:
+                st.divider()
+                st.markdown(f"**Mapped preview** ({len(mapped_df.columns)} fields)")
+                st.dataframe(mapped_df.head(5), use_container_width=True, hide_index=True)
+
+                if import_result_key in st.session_state:
+                    badge_fn(st.session_state.pop(import_result_key))
+
+                if st.button(button_label, type="primary", use_container_width=True, key=f"{tab_key}_btn"):
+                    st.cache_data.clear()
+                    with st.spinner("Importing…"):
+                        result = import_fn(_to_csv_bytes(mapped_df), f"{tab_key}_mapped.csv")
+                    if result:
+                        st.session_state[import_result_key] = result
+                    st.rerun()
+
+
 # ---------------------------------------------------------------------------
 # Page
 # ---------------------------------------------------------------------------
 
 st.title("📥 Import Data")
 
-# Welcome banner — only shown when the database is empty
 inventory = cached_inventory_status()
 if not inventory:
     st.info(
         "**Welcome to VendorIO!** No data yet.  \n"
-        "Upload a products CSV first, then an orders CSV. "
-        "The rest of the dashboard unlocks automatically once products are imported.",
+        "Follow the recommended import order below to get started.",
         icon="👋",
     )
-else:
+
+(
+    tab_bulk,
+    tab_materials, tab_inventory,
+    tab_products,
+    tab_recipes, tab_recipe_items,
+    tab_orders, tab_order_items,
+    tab_transactions, tab_manage,
+) = st.tabs([
+    "⚡ Bulk Upload",
+    "🧪 Raw Materials",
+    "📦 Inventory",
+    "🏷️ Products",
+    "📋 Recipes",
+    "🔗 Recipe Items",
+    "🛒 Orders",
+    "🗂️ Order Items",
+    "💳 Transactions",
+    "⚙️ Manage",
+])
+
+# ---------------------------------------------------------------------------
+# File-name → (import_fn, friendly_label) registry
+# Processed in this exact dependency order.
+# ---------------------------------------------------------------------------
+
+_BULK_REGISTRY = [
+    ("raw_materials",           api_client.import_raw_materials_csv,          "Raw Materials"),
+    ("raw_material_inventory",  api_client.import_raw_material_inventory_csv, "Inventory Levels"),
+    ("products",                api_client.import_products_csv,               "Products"),
+    ("final_products",          api_client.import_products_csv,               "Products"),
+    ("recipes",                 api_client.import_recipes_csv,                "Recipes"),
+    ("recipe_items",            api_client.import_recipe_items_csv,           "Recipe Items"),
+    ("orders",                  api_client.import_orders_csv,                 "Orders"),
+    ("order_items",             api_client.import_order_items_csv,            "Order Items"),
+    ("transactions",            api_client.import_transactions_csv,           "Transactions"),
+]
+
+# Ordered keys for processing (dependency-safe)
+_BULK_ORDER = [
+    "raw_materials", "raw_material_inventory",
+    "products", "final_products",
+    "recipes", "recipe_items",
+    "orders", "order_items",
+    "transactions",
+]
+
+
+def _match_file(filename: str):
+    """Return (key, import_fn, label) for a given filename, or None if unrecognised."""
+    stem = filename.lower().rsplit(".", 1)[0]          # drop extension
+    stem = stem.replace("-", "_").replace(" ", "_")    # normalise separators
+    # strip common suffixes like _template, _data, _export, _2024 etc.
+    for suffix in ("_template", "_data", "_export", "_import", "_sample"):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
+    for key, fn, label in _BULK_REGISTRY:
+        if stem == key or stem.startswith(key + "_") or stem.endswith("_" + key):
+            return key, fn, label
+    return None
+
+
+# ── Bulk Upload ───────────────────────────────────────────────────────────────
+with tab_bulk:
+    st.subheader("⚡ Bulk Upload")
     st.caption(
-        "Upload any CSV — use the column mapper to match your headers to the required fields."
+        "Drop all your CSV files at once. Files are matched by name and imported "
+        "in the correct dependency order automatically."
     )
-
-tab_products, tab_inventory, tab_orders, tab_manage = st.tabs(
-    ["📦 Products", "📊 Inventory", "🛒 Orders", "⚙️ Manage Data"]
-)
-
-# ── Products ─────────────────────────────────────────────────────────────────
-with tab_products:
-    col_hd, col_dl = st.columns([3, 1])
-    with col_hd:
-        st.subheader("Products CSV")
-        st.caption("One row per product. Existing products are **updated by name**; new names are created.")
-    with col_dl:
-        st.download_button(
-            "⬇️ Download template", data=_to_csv_bytes(PRODUCTS_TEMPLATE),
-            file_name="products_template.csv", mime="text/csv", use_container_width=True,
-        )
-
-    st.divider()
-
-    uploaded_products = st.file_uploader("Upload products CSV", type=["csv"], key="products_upload")
-
-    if uploaded_products:
-        df = _parse_upload(uploaded_products)
-        if df is not None:
-            st.markdown(f"**File preview** — {len(df):,} rows · {len(df.columns)} columns")
-            st.dataframe(df.head(5), use_container_width=True, hide_index=True)
-            st.divider()
-
-            mapped_df = _render_column_mapper(df, PRODUCTS_FIELDS, key_prefix="p")
-
-            if mapped_df is not None:
-                st.divider()
-                st.markdown(f"**Mapped preview** ({len(mapped_df.columns)} fields)")
-                st.dataframe(mapped_df.head(5), use_container_width=True, hide_index=True)
-
-                if "import_products_result" in st.session_state:
-                    _render_result_badges(st.session_state.pop("import_products_result"), "products")
-
-                if st.button("✅ Import Products", type="primary", use_container_width=True):
-                    st.cache_data.clear()
-                    with st.spinner("Importing products…"):
-                        result = api_client.import_products_csv(
-                            _to_csv_bytes(mapped_df), "products_mapped.csv"
-                        )
-                    if result:
-                        st.session_state["import_products_result"] = result
-                    st.rerun()
-
-# ── Inventory ────────────────────────────────────────────────────────────────
-with tab_inventory:
-    col_hd, col_dl = st.columns([3, 1])
-    with col_hd:
-        st.subheader("Inventory / Stock CSV")
-        st.caption(
-            "Updates stock levels and cost data for **existing products** matched by name. "
-            "Import products first, then use this tab to set their stock levels."
-        )
-    with col_dl:
-        st.download_button(
-            "⬇️ Download template", data=_to_csv_bytes(INVENTORY_TEMPLATE),
-            file_name="inventory_template.csv", mime="text/csv", use_container_width=True,
-        )
 
     st.info(
-        "**Tip — recommended import order:**  \n"
-        "1. 📦 **Products** — name, price, category  \n"
-        "2. 📊 **Inventory** *(this tab)* — stock levels, reorder points, costs  \n"
-        "3. 🛒 **Orders** — transaction history",
-        icon="💡",
+        "**Expected filenames** (any prefix/suffix is stripped):  \n"
+        "`raw_materials.csv` · `raw_material_inventory.csv` · `products.csv` · "
+        "`recipes.csv` · `recipe_items.csv` · `orders.csv` · `order_items.csv` · "
+        "`transactions.csv`",
+        icon="📋",
     )
 
-    st.divider()
-
-    uploaded_inventory = st.file_uploader(
-        "Upload inventory CSV", type=["csv"], key="inventory_upload"
+    uploaded_bulk = st.file_uploader(
+        "Upload all CSV files",
+        type=["csv"],
+        accept_multiple_files=True,
+        key="bulk_upload",
     )
 
-    if uploaded_inventory:
-        df = _parse_upload(uploaded_inventory)
-        if df is not None:
-            st.markdown(f"**File preview** — {len(df):,} rows · {len(df.columns)} columns")
-            st.dataframe(df.head(5), use_container_width=True, hide_index=True)
+    if uploaded_bulk:
+        # Match & classify each uploaded file
+        matched: dict[str, object] = {}   # key → file object
+        unrecognised: list[str] = []
+
+        for f in uploaded_bulk:
+            result = _match_file(f.name)
+            if result:
+                key, _, _ = result
+                if key not in matched:
+                    matched[key] = f
+                else:
+                    st.warning(f"Duplicate match for '{key}' — keeping first file, ignoring **{f.name}**.")
+            else:
+                unrecognised.append(f.name)
+
+        # Show recognition summary
+        st.divider()
+        cols = st.columns(2)
+        with cols[0]:
+            st.markdown(f"**{len(matched)} file(s) recognised**")
+            for key in _BULK_ORDER:
+                if key in matched:
+                    _, _, label = next(t for t in _BULK_REGISTRY if t[0] == key)
+                    st.markdown(f"✅ `{matched[key].name}` → **{label}**")
+        with cols[1]:
+            if unrecognised:
+                st.markdown(f"**{len(unrecognised)} file(s) not recognised**")
+                for name in unrecognised:
+                    st.markdown(f"❌ `{name}`")
+                st.caption("Rename to match an expected filename (e.g. `products.csv`).")
+
+        if not matched:
+            st.error("No files matched. Check filenames and try again.")
+        else:
             st.divider()
 
-            mapped_df = _render_column_mapper(df, INVENTORY_FIELDS, key_prefix="inv")
+            if "bulk_import_results" in st.session_state:
+                results = st.session_state.pop("bulk_import_results")
+                total_created = sum(r.get("created", 0) + r.get("orders_created", 0) for r in results.values())
+                total_updated = sum(r.get("updated", 0) + r.get("items_created", 0) for r in results.values())
+                total_skipped = sum(r.get("skipped", 0) for r in results.values())
+                total_errors  = sum(len(r.get("errors", [])) for r in results.values())
 
-            if mapped_df is not None:
-                st.divider()
-                st.markdown(f"**Mapped preview** ({len(mapped_df.columns)} fields)")
-                st.dataframe(mapped_df.head(5), use_container_width=True, hide_index=True)
-
-                if "import_inventory_result" in st.session_state:
-                    r = st.session_state.pop("import_inventory_result")
-                    st.success(f"Import complete — **{r.get('updated', 0)}** products updated.")
-                    if r.get("not_found"):
-                        with st.expander(f"⚠️ {len(r['not_found'])} products not found in DB"):
-                            for n in r["not_found"]:
-                                st.caption(n)
-                    if r.get("errors"):
-                        with st.expander(f"⚠️ {len(r['errors'])} row errors"):
-                            for e in r["errors"]:
-                                st.caption(e)
-
-                if st.button("✅ Update Inventory", type="primary", use_container_width=True):
-                    st.cache_data.clear()
-                    with st.spinner("Updating inventory…"):
-                        result = api_client.import_inventory_csv(
-                            _to_csv_bytes(mapped_df), "inventory_mapped.csv"
+                st.success(f"Bulk import complete — {len(results)} file(s) processed.")
+                kpi_cols = st.columns(4)
+                for col, (label, value, color) in zip(kpi_cols, [
+                    ("records created",  total_created, "#16A34A"),
+                    ("records updated",  total_updated, "#2563EB"),
+                    ("rows skipped",     total_skipped, "#CA8A04"),
+                    ("row errors",       total_errors,  "#DC2626"),
+                ]):
+                    with col:
+                        st.markdown(
+                            f"<div style='background:{color}22;border:1px solid {color}55;"
+                            f"border-radius:6px;padding:8px 14px;text-align:center'>"
+                            f"<div style='font-size:1.6rem;font-weight:700;color:{color}'>{value}</div>"
+                            f"<div style='font-size:.75rem'>{label}</div></div>",
+                            unsafe_allow_html=True,
                         )
+
+                for key in _BULK_ORDER:
+                    if key in results:
+                        _, _, label = next(t for t in _BULK_REGISTRY if t[0] == key)
+                        r = results[key]
+                        err_count = len(r.get("errors", []))
+                        icon = "✅" if err_count == 0 else "⚠️"
+                        with st.expander(f"{icon} {label} — {matched[key].name}"):
+                            detail_cols = st.columns(3)
+                            for dc, (dl, dv) in zip(detail_cols, [
+                                ("created",  r.get("created", r.get("orders_created", 0))),
+                                ("updated",  r.get("updated", r.get("items_created", 0))),
+                                ("skipped",  r.get("skipped", 0)),
+                            ]):
+                                dc.metric(dl, dv)
+                            if r.get("errors"):
+                                st.caption("Row errors:")
+                                for e in r["errors"][:10]:
+                                    st.caption(f"  • {e}")
+                                if len(r["errors"]) > 10:
+                                    st.caption(f"  … and {len(r['errors']) - 10} more")
+
+            if st.button("⚡ Import All Files", type="primary", use_container_width=True, key="bulk_btn"):
+                st.cache_data.clear()
+                results = {}
+                progress = st.progress(0, text="Starting import…")
+                steps = [k for k in _BULK_ORDER if k in matched]
+
+                for idx, key in enumerate(steps):
+                    _, fn, label = next(t for t in _BULK_REGISTRY if t[0] == key)
+                    f = matched[key]
+                    progress.progress((idx) / len(steps), text=f"Importing {label} ({f.name})…")
+                    content = f.getvalue()
+                    result = fn(content, f.name)
                     if result:
-                        st.session_state["import_inventory_result"] = result
-                    st.rerun()
+                        results[key] = result
+                    else:
+                        results[key] = {"created": 0, "updated": 0, "skipped": 0, "errors": [f"Request failed for {f.name}"]}
 
-# ── Orders ───────────────────────────────────────────────────────────────────
-with tab_orders:
-    st.subheader("Orders CSV")
+                progress.progress(1.0, text="Done!")
+                st.session_state["bulk_import_results"] = results
+                st.rerun()
 
-    import_mode = st.radio(
-        "File format",
-        ["Single file (flat)", "Two files — orders + items (relational)"],
-        horizontal=True,
-        key="orders_mode",
+# ── Raw Materials ─────────────────────────────────────────────────────────────
+with tab_materials:
+    st.subheader("Raw Materials CSV")
+    _upload_section(
+        tab_key="materials",
+        field_defs=RAW_MATERIALS_FIELDS,
+        template_df=RAW_MATERIALS_TEMPLATE,
+        template_filename="raw_materials_template.csv",
+        description=(
+            "One row per ingredient or stock item. "
+            "Existing materials are **updated by name**; new names are created. "
+            "`current_stock` seeds the live inventory."
+        ),
+        import_fn=api_client.import_raw_materials_csv,
+        import_result_key="import_materials_result",
+        button_label="✅ Import Raw Materials",
     )
 
-    # ── Single file ──────────────────────────────────────────────────────────
-    if import_mode == "Single file (flat)":
-        col_hd, col_dl = st.columns([3, 1])
-        with col_hd:
-            st.caption(
-                "Each row is one line item. Rows sharing the same **Order ID** "
-                "are grouped into one order."
-            )
-        with col_dl:
-            st.download_button(
-                "⬇️ Download template", data=_to_csv_bytes(ORDERS_FLAT_TEMPLATE),
-                file_name="orders_flat_template.csv", mime="text/csv", use_container_width=True,
-            )
+# ── Raw Material Inventory ────────────────────────────────────────────────────
+with tab_inventory:
+    st.subheader("Inventory Update CSV")
+    st.caption(
+        "Update **stock levels only** for existing raw materials without re-importing specs.  \n"
+        "Use `material_id` (numeric) or `material_name` to identify each row."
+    )
 
-        st.caption(
-            "• `order_date` format: `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`  \n"
-            "• Products not in the catalogue are auto-created  \n"
-            "• `status` defaults to `completed` if omitted"
-        )
+    def _render_inventory_result(result: dict) -> None:
+        st.success("Stock levels updated!")
+        cols = st.columns(3)
+        badges = [
+            ("updated",   result.get("updated", 0),  "#16A34A"),
+            ("skipped",   result.get("skipped", 0),  "#CA8A04"),
+            ("not found", len(result.get("not_found", [])), "#DC2626"),
+        ]
+        for col, (label, value, color) in zip(cols, badges):
+            with col:
+                st.markdown(
+                    f"<div style='background:{color}22;border:1px solid {color}55;"
+                    f"border-radius:6px;padding:8px 14px;text-align:center'>"
+                    f"<div style='font-size:1.6rem;font-weight:700;color:{color}'>{value}</div>"
+                    f"<div style='font-size:.85rem'>{label}</div></div>",
+                    unsafe_allow_html=True,
+                )
+        if result.get("not_found"):
+            with st.expander(f"⚠️ {len(result['not_found'])} materials not found"):
+                for n in result["not_found"]:
+                    st.caption(n)
+        if result.get("errors"):
+            with st.expander(f"⚠️ {len(result['errors'])} row errors"):
+                for e in result["errors"]:
+                    st.caption(e)
 
-        st.divider()
+    _upload_section(
+        tab_key="rmi",
+        field_defs=RAW_MATERIAL_INVENTORY_FIELDS,
+        template_df=RAW_MATERIAL_INVENTORY_TEMPLATE,
+        template_filename="raw_material_inventory_template.csv",
+        description=(
+            "Provide either `material_id` (numeric) or `material_name`, plus `current_stock`. "
+            "**Raw materials must already exist** — import Raw Materials first."
+        ),
+        import_fn=api_client.import_raw_material_inventory_csv,
+        import_result_key="import_rmi_result",
+        button_label="✅ Update Inventory",
+        badge_fn=_render_inventory_result,
+    )
 
-        uploaded_orders = st.file_uploader(
-            "Upload orders CSV", type=["csv"], key="orders_flat_upload"
-        )
+# ── Products ──────────────────────────────────────────────────────────────────
+with tab_products:
+    st.subheader("Products CSV")
+    _upload_section(
+        tab_key="products",
+        field_defs=PRODUCTS_FIELDS,
+        template_df=PRODUCTS_TEMPLATE,
+        template_filename="products_template.csv",
+        description=(
+            "One row per sellable product. "
+            "Cost lives in Recipes — **not** here. "
+            "Existing products are **updated by name**."
+        ),
+        import_fn=api_client.import_products_csv,
+        import_result_key="import_products_result",
+        button_label="✅ Import Products",
+    )
 
-        if uploaded_orders:
-            df = _parse_upload(uploaded_orders)
-            if df is not None:
-                st.markdown(f"**File preview** — {len(df):,} rows · {len(df.columns)} columns")
-                st.dataframe(df.head(5), use_container_width=True, hide_index=True)
-                st.divider()
+# ── Recipes ───────────────────────────────────────────────────────────────────
+with tab_recipes:
+    st.subheader("Recipes CSV")
+    st.caption(
+        "Each row defines the cost for one (product, size) combination.  \n"
+        "Leave `size` blank for products without size variants. "
+        "Valid sizes: **S**, **M**, **L**."
+    )
+    _upload_section(
+        tab_key="recipes",
+        field_defs=RECIPES_FIELDS,
+        template_df=RECIPES_TEMPLATE,
+        template_filename="recipes_template.csv",
+        description=(
+            "Import recipe headers. **Products must be imported first.** "
+            "`product_id` must match an existing product's numeric ID."
+        ),
+        import_fn=api_client.import_recipes_csv,
+        import_result_key="import_recipes_result",
+        button_label="✅ Import Recipes",
+    )
 
-                mapped_df = _render_column_mapper(df, ORDERS_FLAT_FIELDS, key_prefix="of")
+# ── Recipe Items ──────────────────────────────────────────────────────────────
+with tab_recipe_items:
+    st.subheader("Recipe Items CSV")
+    st.caption(
+        "Links recipes to raw materials with exact quantities.  \n"
+        "**Recipes and Raw Materials must be imported first.**"
+    )
+    _upload_section(
+        tab_key="recipe_items",
+        field_defs=RECIPE_ITEMS_FIELDS,
+        template_df=RECIPE_ITEMS_TEMPLATE,
+        template_filename="recipe_items_template.csv",
+        description=(
+            "`recipe_id` and `material_id` must reference existing records. "
+            "Duplicate (recipe_id, material_id) pairs are **updated**."
+        ),
+        import_fn=api_client.import_recipe_items_csv,
+        import_result_key="import_recipe_items_result",
+        button_label="✅ Import Recipe Items",
+    )
 
-                if mapped_df is not None:
-                    st.divider()
-                    st.markdown(f"**Mapped preview** ({len(mapped_df.columns)} fields)")
-                    st.dataframe(mapped_df.head(5), use_container_width=True, hide_index=True)
+# ── Orders ────────────────────────────────────────────────────────────────────
+with tab_orders:
+    st.subheader("Orders CSV")
+    st.warning(
+        "**Recipes must exist before importing orders.** "
+        "Any row whose `product_id` (+ `size`) has no recipe will be rejected.",
+        icon="⚠️",
+    )
+    _upload_section(
+        tab_key="orders",
+        field_defs=ORDERS_FIELDS,
+        template_df=ORDERS_TEMPLATE,
+        template_filename="orders_template.csv",
+        description=(
+            "Each row is one line item. Rows sharing the same **Order ID** "
+            "are grouped into one order. `unit_cost` is snapshotted from the "
+            "recipe at import time for historical accuracy."
+        ),
+        import_fn=api_client.import_orders_csv,
+        import_result_key="import_orders_result",
+        button_label="✅ Import Orders",
+        badge_fn=_render_orders_badges,
+    )
 
-                    if "import_orders_flat_result" in st.session_state:
-                        _render_result_badges(st.session_state.pop("import_orders_flat_result"), "orders")
+# ── Order Items ───────────────────────────────────────────────────────────────
+with tab_order_items:
+    st.subheader("Order Items CSV")
+    st.info(
+        "**Two-file workflow:** Use this tab when you have orders and their line items "
+        "in separate files. Import the **Orders** tab first (header file), then come here "
+        "to import the matching line items.",
+        icon="ℹ️",
+    )
+    st.warning(
+        "**Recipes must exist before importing order items.** "
+        "Any row whose `product_id` (+ `size`) has no recipe will be rejected.",
+        icon="⚠️",
+    )
+    _upload_section(
+        tab_key="order_items",
+        field_defs=ORDER_ITEMS_FIELDS,
+        template_df=ORDER_ITEMS_TEMPLATE,
+        template_filename="order_items_template.csv",
+        description=(
+            "One row per line item. `order_id` must match an order already in the database. "
+            "`unit_cost` is snapshotted from the recipe at import time."
+        ),
+        import_fn=api_client.import_order_items_csv,
+        import_result_key="import_order_items_result",
+        button_label="✅ Import Order Items",
+    )
 
-                    if st.button("✅ Import Orders", type="primary", use_container_width=True):
-                        st.cache_data.clear()
-                        with st.spinner("Importing orders…"):
-                            result = api_client.import_orders_csv(
-                                _to_csv_bytes(mapped_df), "orders_mapped.csv"
-                            )
-                        if result:
-                            st.session_state["import_orders_flat_result"] = result
-                        st.rerun()
-
-    # ── Two files ─────────────────────────────────────────────────────────────
-    else:
-        st.caption(
-            "Upload two separate files: one with order headers and one with line items. "
-            "They are joined on the **Order ID** column."
-        )
-
-        col_dl1, col_dl2 = st.columns(2)
-        with col_dl1:
-            st.download_button(
-                "⬇️ Orders template", data=_to_csv_bytes(ORDERS_HEADER_TEMPLATE),
-                file_name="orders_headers_template.csv", mime="text/csv", use_container_width=True,
-            )
-        with col_dl2:
-            st.download_button(
-                "⬇️ Items template", data=_to_csv_bytes(ORDER_ITEMS_TEMPLATE),
-                file_name="order_items_template.csv", mime="text/csv", use_container_width=True,
-            )
-
-        st.divider()
-
-        col_up1, col_up2 = st.columns(2)
-        with col_up1:
-            st.markdown("**1 — Orders file** *(one row per order)*")
-            uploaded_hdr = st.file_uploader(
-                "Orders CSV (headers)", type=["csv"], key="orders_hdr_upload"
-            )
-        with col_up2:
-            st.markdown("**2 — Items file** *(one row per line item)*")
-            uploaded_items = st.file_uploader(
-                "Items CSV (line items)", type=["csv"], key="orders_items_upload"
-            )
-
-        if uploaded_hdr:
-            hdr_df = _parse_upload(uploaded_hdr)
-            if hdr_df is not None:
-                with st.expander(
-                    f"Orders file preview — {len(hdr_df):,} rows · {len(hdr_df.columns)} columns"
-                ):
-                    st.dataframe(hdr_df.head(5), use_container_width=True, hide_index=True)
-
-        if uploaded_items:
-            items_df = _parse_upload(uploaded_items)
-            if items_df is not None:
-                with st.expander(
-                    f"Items file preview — {len(items_df):,} rows · {len(items_df.columns)} columns"
-                ):
-                    st.dataframe(items_df.head(5), use_container_width=True, hide_index=True)
-
-        if uploaded_hdr and uploaded_items:
-            hdr_df = _parse_upload(uploaded_hdr)
-            items_df = _parse_upload(uploaded_items)
-
-            if hdr_df is not None and items_df is not None:
-                st.divider()
-
-                st.markdown("**Map orders file columns**")
-                mapped_hdr = _render_column_mapper(hdr_df, ORDERS_HEADER_FIELDS, key_prefix="oh")
-
-                st.divider()
-
-                st.markdown("**Map items file columns**")
-                mapped_items = _render_column_mapper(items_df, ORDER_ITEMS_FIELDS, key_prefix="oi")
-
-                if mapped_hdr is not None and mapped_items is not None:
-                    # ── Merge ──────────────────────────────────────────────
-                    # Left join: items drive the rows, orders supply the metadata.
-                    # Use suffixes to handle any unexpected shared columns.
-                    merged = mapped_items.merge(
-                        mapped_hdr,
-                        on="order_id",
-                        how="left",
-                        suffixes=("", "_hdr"),
-                    )
-                    # Drop any _hdr duplicate columns that snuck in
-                    merged = merged[[c for c in merged.columns if not c.endswith("_hdr")]]
-
-                    # ── Validation warnings ────────────────────────────────
-                    orphan_items = merged["order_date"].isna().sum()
-                    all_order_ids = set(mapped_hdr["order_id"].dropna().unique())
-                    matched_order_ids = set(merged["order_id"].dropna().unique())
-                    empty_orders = all_order_ids - matched_order_ids
-
-                    if orphan_items:
-                        st.warning(
-                            f"⚠️ **{orphan_items} line items** have an Order ID not found in the "
-                            f"orders file and will be skipped."
-                        )
-                    if empty_orders:
-                        st.info(
-                            f"ℹ️ **{len(empty_orders)} orders** have no matching line items "
-                            f"and will not be imported."
-                        )
-
-                    # Filter out orphan items
-                    valid = merged[merged["order_date"].notna()].copy()
-
-                    if valid.empty:
-                        st.error("No valid rows after joining — check that Order IDs match between files.")
-                    else:
-                        st.divider()
-                        st.markdown(
-                            f"**Merged preview** — {len(valid):,} valid rows "
-                            f"across {len(all_order_ids - empty_orders):,} orders"
-                        )
-                        st.dataframe(valid.head(8), use_container_width=True, hide_index=True)
-
-                        if "import_orders_rel_result" in st.session_state:
-                            _render_result_badges(st.session_state.pop("import_orders_rel_result"), "orders")
-
-                        if st.button(
-                            "✅ Import Orders", type="primary", use_container_width=True,
-                            key="import_relational",
-                        ):
-                            st.cache_data.clear()
-                            with st.spinner("Importing orders…"):
-                                result = api_client.import_orders_csv(
-                                    _to_csv_bytes(valid), "orders_relational_merged.csv"
-                                )
-                            if result:
-                                st.session_state["import_orders_rel_result"] = result
-                            st.rerun()
+# ── Transactions ──────────────────────────────────────────────────────────────
+with tab_transactions:
+    st.subheader("Transactions CSV")
+    _upload_section(
+        tab_key="transactions",
+        field_defs=TRANSACTIONS_FIELDS,
+        template_df=TRANSACTIONS_TEMPLATE,
+        template_filename="transactions_template.csv",
+        description=(
+            "Optional payment records. "
+            "`order_id` must match an existing order's numeric ID."
+        ),
+        import_fn=api_client.import_transactions_csv,
+        import_result_key="import_transactions_result",
+        button_label="✅ Import Transactions",
+    )
 
 # ── Manage ────────────────────────────────────────────────────────────────────
 with tab_manage:
@@ -565,25 +742,29 @@ with tab_manage:
 
     inventory = cached_inventory_status()
     if inventory:
-        st.info(f"Database contains **{len(inventory)} products** in inventory.")
+        st.info(f"Database has **{len(inventory)} raw materials** tracked in inventory.")
     else:
-        st.info("No products in database yet.")
+        st.info("No inventory data yet.")
 
     st.divider()
 
     with st.expander("🗑️ Clear all data (danger zone)", expanded=False):
         st.warning(
-            "Permanently deletes **all** products, orders, order items, and customers. "
-            "Re-import or re-run `scripts/load_sample_data.py` to restore."
+            "Permanently deletes **all** raw materials, products, recipes, orders, "
+            "customers, and transactions."
         )
         confirm_text = st.text_input(
             "Type DELETE to confirm", placeholder="DELETE", key="confirm_clear"
         )
+
         if "clear_data_result" in st.session_state:
             d = st.session_state.pop("clear_data_result")
             st.success(
-                f"Cleared: {d.get('orders', 0)} orders · {d.get('order_items', 0)} items · "
-                f"{d.get('products', 0)} products · {d.get('customers', 0)} customers."
+                f"Cleared: {d.get('orders', 0)} orders · "
+                f"{d.get('order_items', 0)} items · "
+                f"{d.get('final_products', 0)} products · "
+                f"{d.get('raw_materials', 0)} materials · "
+                f"{d.get('customers', 0)} customers."
             )
 
         if st.button("🗑️ Clear all data", type="primary", disabled=(confirm_text != "DELETE")):

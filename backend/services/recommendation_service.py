@@ -1,17 +1,14 @@
-from datetime import datetime, timedelta
-from typing import Optional
-from sqlalchemy import func
+import re
 from sqlalchemy.orm import Session
-from backend.models.product import Product
-from backend.models.order import Order, OrderItem
+from backend.models.raw_material import RawMaterial
 from backend.services.inventory_service import (
-    _avg_daily_sales,
+    _material_daily_consumption,
+    _current_stock,
     days_to_stockout,
     HOLDING_COST_RATE,
     ORDERING_COST,
     calculate_eoq,
 )
-from backend.config import settings
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -20,99 +17,93 @@ URGENCY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
 
 def generate_recommendations(db: Session, limit: int = 20) -> list[dict]:
-    products = db.query(Product).filter(Product.deleted_at.is_(None)).all()
+    materials = db.query(RawMaterial).all()
     recommendations = []
 
-    # Pre-compute daily sales and turnover for all products
-    daily_sales = {p.id: _avg_daily_sales(db, p.id) for p in products}
+    daily_consumption = {m.id: _material_daily_consumption(db, m.id) for m in materials}
+    stock_levels = {m.id: _current_stock(db, m.id) for m in materials}
+
     turnover_rates = {}
-    for p in products:
-        ads = daily_sales.get(p.id, 0)
-        if p.current_stock > 0 and ads > 0:
-            turnover_rates[p.id] = (ads * 365) / p.current_stock
+    for m in materials:
+        adc = daily_consumption.get(m.id, 0)
+        stock = stock_levels.get(m.id, 0)
+        if stock > 0 and adc > 0:
+            turnover_rates[m.id] = (adc * 365) / stock
         else:
-            turnover_rates[p.id] = 0.0
+            turnover_rates[m.id] = 0.0
 
     all_rates = list(turnover_rates.values())
+    threshold_slow = 0
     if all_rates:
         sorted_rates = sorted(all_rates)
         threshold_slow = sorted_rates[max(0, int(len(sorted_rates) * 0.25))]
-    else:
-        threshold_slow = 0
 
-    for p in products:
-        ads = daily_sales.get(p.id, 0)
-        dts = days_to_stockout(p.current_stock, ads)
-        holding_cost_monthly = (
-            float(p.cost_per_unit or p.unit_price) * p.current_stock * HOLDING_COST_RATE / 12
-        )
-        reorder = p.reorder_point or (ads * p.lead_time_days)
+    for m in materials:
+        adc = daily_consumption.get(m.id, 0)
+        stock = stock_levels.get(m.id, 0)
+        dts = days_to_stockout(stock, adc)
+        unit_cost = float(m.cost_per_unit or 0)
+        holding_cost_monthly = unit_cost * stock * HOLDING_COST_RATE / 12
+        reorder = m.reorder_point or (adc * m.lead_time_days)
 
         # Rule 1: Stockout risk
         if dts is not None and dts <= 14:
             urgency = "critical" if dts <= 7 else "high"
-            annual_demand = ads * 365
-            eoq = calculate_eoq(
-                annual_demand,
-                ORDERING_COST,
-                float(p.cost_per_unit or p.unit_price) * HOLDING_COST_RATE,
-            )
+            annual_demand = adc * 365
+            eoq = calculate_eoq(annual_demand, ORDERING_COST, unit_cost * HOLDING_COST_RATE)
             reorder_qty = max(int(eoq), int(reorder * 2), 1)
             recommendations.append({
                 "type": "stockout_risk",
-                "product_id": p.id,
-                "product_name": p.name,
+                "product_id": m.id,
+                "product_name": m.name,
                 "days_remaining": round(dts, 1),
-                "action": f"Reorder {reorder_qty} units of '{p.name}' immediately",
-                "impact": "Avoid lost sales and customer dissatisfaction",
+                "action": f"Reorder {reorder_qty} {m.unit or 'units'} of '{m.name}' immediately",
+                "impact": "Avoid production stoppage from ingredient shortage",
                 "urgency": urgency,
             })
 
         # Rule 2: Slow movers
-        if turnover_rates.get(p.id, 0) <= threshold_slow and p.current_stock > 0:
+        if turnover_rates.get(m.id, 0) <= threshold_slow and stock > 0:
             savings_annual = holding_cost_monthly * 12
             recommendations.append({
                 "type": "slow_mover",
-                "product_id": p.id,
-                "product_name": p.name,
-                "turnover_rate": round(turnover_rates.get(p.id, 0), 2),
-                "action": f"Bundle '{p.name}' with fast-movers or apply 10-15% discount",
+                "product_id": m.id,
+                "product_name": m.name,
+                "turnover_rate": round(turnover_rates.get(m.id, 0), 2),
+                "action": f"Reduce order frequency for '{m.name}' — low consumption rate",
                 "impact": f"Reduce holding cost by ${savings_annual:.0f}/year",
                 "urgency": "medium",
             })
 
-        # Rule 3: Overstock — too much stock relative to velocity
-        if ads > 0 and dts is not None and dts > 180:
+        # Rule 3: Overstock
+        if adc > 0 and dts is not None and dts > 180:
             recommendations.append({
                 "type": "overstock",
-                "product_id": p.id,
-                "product_name": p.name,
+                "product_id": m.id,
+                "product_name": m.name,
                 "days_to_stockout": round(dts, 0),
-                "action": f"Reduce next order size for '{p.name}' — {dts:.0f} days of stock on hand",
+                "action": f"Reduce next order for '{m.name}' — {dts:.0f} days of stock on hand",
                 "impact": f"Free up ${holding_cost_monthly:.0f}/month in holding costs",
                 "urgency": "low",
             })
 
-    # Rule 4: High-velocity products — check if they need bulk order
-    velocity_threshold = sorted(daily_sales.values(), reverse=True)
-    if velocity_threshold:
-        top_10_pct_threshold = velocity_threshold[max(0, int(len(velocity_threshold) * 0.1))]
-        for p in products:
-            ads = daily_sales.get(p.id, 0)
-            if ads >= top_10_pct_threshold and ads > 0:
-                annual_demand = ads * 365
-                eoq = calculate_eoq(
-                    annual_demand,
-                    ORDERING_COST,
-                    float(p.cost_per_unit or p.unit_price) * HOLDING_COST_RATE,
-                )
-                savings = float(p.cost_per_unit or p.unit_price) * eoq * 0.05  # 5% bulk discount
+    # Rule 4: High-velocity materials — suggest bulk orders
+    velocity_vals = sorted(daily_consumption.values(), reverse=True)
+    if velocity_vals:
+        top_threshold = velocity_vals[max(0, int(len(velocity_vals) * 0.1))]
+        for m in materials:
+            adc = daily_consumption.get(m.id, 0)
+            if adc >= top_threshold and adc > 0:
+                unit_cost = float(m.cost_per_unit or 0)
+                annual_demand = adc * 365
+                eoq = calculate_eoq(annual_demand, ORDERING_COST, unit_cost * HOLDING_COST_RATE)
+                savings = unit_cost * eoq * 0.05
                 if savings > 50:
                     recommendations.append({
                         "type": "bulk_order",
-                        "product_id": p.id,
-                        "product_name": p.name,
-                        "action": f"Place bulk order of {int(eoq)} units for '{p.name}' (EOQ)",
+                        "product_id": m.id,
+                        "product_name": m.name,
+                        "action": f"Place bulk order of {int(eoq)} {m.unit or 'units'} for '{m.name}' (EOQ)",
                         "impact": f"Save ${savings:.0f} with 5% bulk discount",
                         "urgency": "low",
                     })
@@ -124,10 +115,7 @@ def generate_recommendations(db: Session, limit: int = 20) -> list[dict]:
 def get_potential_savings(recommendations: list[dict]) -> float:
     total = 0.0
     for r in recommendations:
-        impact = r.get("impact", "")
-        # Extract dollar amount from impact string
-        import re
-        match = re.search(r"\$([0-9,]+)", impact)
+        match = re.search(r"\$([0-9,]+)", r.get("impact", ""))
         if match:
             total += float(match.group(1).replace(",", ""))
     return round(total, 2)

@@ -1,36 +1,35 @@
-from datetime import date
 from typing import Optional
 from sqlalchemy.orm import Session
 from backend.crud.base import CRUDBase
-from backend.models.inventory import InventorySnapshot
-from backend.schemas.inventory import InventorySnapshotCreate, InventorySnapshotBase
+from backend.models.raw_material import RawMaterialInventory
+from backend.schemas.inventory import RawMaterialInventoryCreate, RawMaterialInventoryBase
 
 
-class CRUDInventorySnapshot(CRUDBase[InventorySnapshot, InventorySnapshotCreate, InventorySnapshotBase]):
-    def get_latest_for_product(self, db: Session, product_id: int) -> Optional[InventorySnapshot]:
+class CRUDRawMaterialInventory(
+    CRUDBase[RawMaterialInventory, RawMaterialInventoryCreate, RawMaterialInventoryBase]
+):
+    def get_latest_for_material(
+        self, db: Session, material_id: int
+    ) -> Optional[RawMaterialInventory]:
         return (
-            db.query(InventorySnapshot)
-            .filter(InventorySnapshot.product_id == product_id)
-            .order_by(InventorySnapshot.snapshot_date.desc(), InventorySnapshot.created_at.desc())
+            db.query(RawMaterialInventory)
+            .filter(RawMaterialInventory.material_id == material_id)
+            .order_by(RawMaterialInventory.id.desc())
             .first()
         )
 
-    def get_history_for_product(
-        self, db: Session, product_id: int, limit: int = 30
-    ) -> list[InventorySnapshot]:
-        return (
-            db.query(InventorySnapshot)
-            .filter(InventorySnapshot.product_id == product_id)
-            .order_by(InventorySnapshot.snapshot_date.desc())
-            .limit(limit)
-            .all()
-        )
-
-    def bulk_create(self, db: Session, *, snapshots: list[dict]) -> list[InventorySnapshot]:
-        db_objs = [InventorySnapshot(**s) for s in snapshots]
-        db.bulk_save_objects(db_objs)
+    def upsert_stock(self, db: Session, material_id: int, current_stock: int) -> RawMaterialInventory:
+        row = self.get_latest_for_material(db, material_id)
+        if row:
+            row.current_stock = current_stock
+            db.commit()
+            db.refresh(row)
+            return row
+        row = RawMaterialInventory(material_id=material_id, current_stock=current_stock)
+        db.add(row)
         db.commit()
-        return db_objs
+        db.refresh(row)
+        return row
 
 
-inventory_snapshot = CRUDInventorySnapshot(InventorySnapshot)
+raw_material_inventory = CRUDRawMaterialInventory(RawMaterialInventory)

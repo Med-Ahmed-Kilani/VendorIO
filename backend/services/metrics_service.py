@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import func, distinct
 from sqlalchemy.orm import Session
 from backend.models.order import Order, OrderItem
-from backend.models.product import Product
+from backend.models.final_product import FinalProduct
 from backend.models.customer import Customer
 from backend.utils.logger import get_logger
 
@@ -30,9 +30,12 @@ def get_kpi_metrics(
     order_count = base_q.count()
     avg_order_value = total_revenue / order_count if order_count > 0 else 0
 
-    total_customers = base_q.with_entities(
-        func.count(distinct(Order.customer_id))
-    ).filter(Order.customer_id.isnot(None)).scalar() or 0
+    total_customers = (
+        base_q.with_entities(func.count(distinct(Order.customer_id)))
+        .filter(Order.customer_id.isnot(None))
+        .scalar()
+        or 0
+    )
 
     repeat_customers = (
         db.query(func.count(distinct(Order.customer_id)))
@@ -47,44 +50,34 @@ def get_kpi_metrics(
     )
     repeat_rate = repeat_customers / total_customers if total_customers > 0 else 0
 
-    # Top products by revenue
+    # Top / bottom products by revenue (via OrderItems + FinalProducts)
+    def _product_revenue_query():
+        return (
+            db.query(
+                FinalProduct.id,
+                FinalProduct.name,
+                FinalProduct.category,
+                func.sum(OrderItem.line_total).label("revenue"),
+                func.sum(OrderItem.quantity).label("units_sold"),
+            )
+            .join(OrderItem, FinalProduct.id == OrderItem.product_id)
+            .join(Order, OrderItem.order_id == Order.id)
+            .filter(
+                Order.order_date >= start_date,
+                Order.order_date <= end_date,
+                Order.status == "completed",
+            )
+            .group_by(FinalProduct.id, FinalProduct.name, FinalProduct.category)
+        )
+
     top_products = (
-        db.query(
-            Product.id,
-            Product.name,
-            Product.category,
-            func.sum(OrderItem.line_total).label("revenue"),
-            func.sum(OrderItem.quantity).label("units_sold"),
-        )
-        .join(OrderItem, Product.id == OrderItem.product_id)
-        .join(Order, OrderItem.order_id == Order.id)
-        .filter(
-            Order.order_date >= start_date,
-            Order.order_date <= end_date,
-            Order.status == "completed",
-        )
-        .group_by(Product.id, Product.name, Product.category)
+        _product_revenue_query()
         .order_by(func.sum(OrderItem.line_total).desc())
         .limit(5)
         .all()
     )
-
     bottom_products = (
-        db.query(
-            Product.id,
-            Product.name,
-            Product.category,
-            func.sum(OrderItem.line_total).label("revenue"),
-            func.sum(OrderItem.quantity).label("units_sold"),
-        )
-        .join(OrderItem, Product.id == OrderItem.product_id)
-        .join(Order, OrderItem.order_id == Order.id)
-        .filter(
-            Order.order_date >= start_date,
-            Order.order_date <= end_date,
-            Order.status == "completed",
-        )
-        .group_by(Product.id, Product.name, Product.category)
+        _product_revenue_query()
         .order_by(func.sum(OrderItem.line_total).asc())
         .limit(5)
         .all()
@@ -99,17 +92,26 @@ def get_kpi_metrics(
             "units_sold": int(row.units_sold or 0),
         }
 
-    # Estimate profit using avg margin across all products
-    products = db.query(Product).filter(Product.deleted_at.is_(None)).all()
-    margins = [p.margin for p in products if p.margin is not None]
-    avg_margin = float(sum(margins) / len(margins)) if margins else 0.3
-    estimated_profit = total_revenue * avg_margin
+    # Profit: use snapshotted unit_cost on order_items where available
+    total_cogs = float(
+        db.query(func.sum(OrderItem.unit_cost * OrderItem.quantity))
+        .join(Order, OrderItem.order_id == Order.id)
+        .filter(
+            Order.order_date >= start_date,
+            Order.order_date <= end_date,
+            Order.status == "completed",
+            OrderItem.unit_cost.isnot(None),
+        )
+        .scalar()
+        or 0
+    )
+    total_profit = total_revenue - total_cogs
 
     return {
         "period_start": start_date.isoformat(),
         "period_end": end_date.isoformat(),
         "total_revenue": round(total_revenue, 2),
-        "total_profit": round(estimated_profit, 2),
+        "total_profit": round(total_profit, 2),
         "order_count": order_count,
         "avg_order_value": round(avg_order_value, 2),
         "total_customers": total_customers,
