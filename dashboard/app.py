@@ -1,6 +1,15 @@
 """VendorIO Streamlit dashboard entry point."""
-import streamlit as st
+import sys
 from pathlib import Path
+
+# Ensure project root is on sys.path so `dashboard.*` is importable. Streamlit
+# puts the script's own directory on sys.path, not the project root, so
+# `streamlit run dashboard/app.py` would otherwise fail to import this package.
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+import streamlit as st
 from dashboard.config import PAGE_TITLE, PAGE_ICON
 from dashboard.utils.cache import cached_inventory_status
 

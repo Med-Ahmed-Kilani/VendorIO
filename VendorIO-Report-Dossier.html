@@ -1,0 +1,1484 @@
+<title>VendorIO Report Dossier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#F2F3EF;
+    --surface:#FFFFFF;
+    --surface-2:#EAECE6;
+    --ink:#14191B;
+    --ink-2:#3E4749;
+    --muted:#6B7573;
+    --line:#D6D9D1;
+    --line-soft:#E3E5DE;
+    --accent:#0E6A60;
+    --accent-soft:#DDEBE7;
+    --ochre:#9C6516;
+    --ochre-soft:#F2E7D4;
+    --crit:#A32B22;
+    --crit-soft:#F6E0DD;
+    --warn:#8A6206;
+    --warn-soft:#F4EAD2;
+    --ok:#2A6142;
+    --ok-soft:#DFEBE2;
+
+    --f-display:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+    --f-body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0F1416;
+      --surface:#161D20;
+      --surface-2:#1D2528;
+      --ink:#E6EAE8;
+      --ink-2:#BAC3C1;
+      --muted:#8A9593;
+      --line:#2C3639;
+      --line-soft:#232C2F;
+      --accent:#4FB3A4;
+      --accent-soft:#16302D;
+      --ochre:#D19A4E;
+      --ochre-soft:#31261440;
+      --crit:#E0796E;
+      --crit-soft:#331D1A;
+      --warn:#D3A63F;
+      --warn-soft:#2E2614;
+      --ok:#6FB78C;
+      --ok-soft:#172B20;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0F1416;
+    --surface:#161D20;
+    --surface-2:#1D2528;
+    --ink:#E6EAE8;
+    --ink-2:#BAC3C1;
+    --muted:#8A9593;
+    --line:#2C3639;
+    --line-soft:#232C2F;
+    --accent:#4FB3A4;
+    --accent-soft:#16302D;
+    --ochre:#D19A4E;
+    --ochre-soft:#31261440;
+    --crit:#E0796E;
+    --crit-soft:#331D1A;
+    --warn:#D3A63F;
+    --warn-soft:#2E2614;
+    --ok:#6FB78C;
+    --ok-soft:#172B20;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--f-body);
+    font-size:16px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);color:var(--ink);}
+  a{color:var(--accent);text-underline-offset:3px;text-decoration-thickness:1px;}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+
+  /* ---------- shell ---------- */
+  .shell{max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,40px) 96px;}
+  .masthead{
+    padding:clamp(40px,7vw,76px) 0 clamp(28px,4vw,40px);
+    border-bottom:2px solid var(--ink);
+  }
+  .eyebrow{
+    font-family:var(--f-mono);font-size:11.5px;font-weight:500;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+    display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;
+  }
+  .eyebrow .sep{color:var(--line);}
+  h1{
+    font-family:var(--f-display);font-weight:700;
+    font-size:clamp(2.3rem,6vw,3.9rem);line-height:1.04;letter-spacing:-.022em;
+    margin:.32em 0 .28em;text-wrap:balance;
+  }
+  .standfirst{
+    font-size:clamp(1.02rem,2.1vw,1.2rem);color:var(--ink-2);
+    max-width:62ch;line-height:1.55;
+  }
+  .masthead-meta{
+    display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;margin-top:1.7rem;
+    font-family:var(--f-mono);font-size:12px;color:var(--muted);
+  }
+  .masthead-meta b{color:var(--ink-2);font-weight:500;}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0;}
+  @media(min-width:1000px){
+    .layout{grid-template-columns:14.5rem minmax(0,1fr);gap:clamp(32px,4vw,56px);}
+  }
+
+  /* ---------- contents rail ---------- */
+  .rail{display:none;}
+  @media(min-width:1000px){
+    .rail{
+      display:block;position:sticky;top:0;align-self:start;
+      max-height:100vh;overflow-y:auto;padding:44px 0 40px;
+    }
+  }
+  .rail h2{
+    font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 1rem;
+  }
+  .rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;}
+  .rail a{
+    display:grid;grid-template-columns:1.7rem 1fr;gap:.2rem;
+    padding:.34rem .4rem .34rem 0;font-size:13.5px;line-height:1.32;
+    color:var(--ink-2);text-decoration:none;border-left:2px solid transparent;
+    padding-left:.7rem;transition:color .12s,border-color .12s;
+  }
+  .rail a:hover{color:var(--accent);border-left-color:var(--accent);}
+  .rail a .n{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-top:.14em;}
+
+  /* ---------- sections ---------- */
+  main{min-width:0;padding-top:clamp(36px,5vw,52px);}
+  section{margin-bottom:clamp(48px,6vw,72px);scroll-margin-top:24px;}
+  .sec-head{display:flex;gap:.85rem;align-items:baseline;margin-bottom:1.1rem;}
+  .sec-num{
+    font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--accent);
+    letter-spacing:.06em;padding-top:.32em;flex:none;
+  }
+  h2.sec-title{
+    font-family:var(--f-display);font-weight:600;
+    font-size:clamp(1.5rem,3.3vw,2rem);line-height:1.16;letter-spacing:-.014em;
+    margin:0;text-wrap:balance;
+  }
+  h3{
+    font-family:var(--f-body);font-weight:600;font-size:1.02rem;letter-spacing:-.005em;
+    margin:2rem 0 .6rem;color:var(--ink);
+  }
+  h4{
+    font-family:var(--f-mono);font-weight:600;font-size:11px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--muted);margin:1.5rem 0 .55rem;
+  }
+  p{margin:0 0 1rem;max-width:66ch;color:var(--ink-2);}
+  p strong,li strong{color:var(--ink);font-weight:600;}
+  .lead{font-size:1.06rem;color:var(--ink-2);}
+  ul.body,ol.body{max-width:66ch;margin:0 0 1rem;padding-left:1.15rem;color:var(--ink-2);}
+  ul.body li,ol.body li{margin-bottom:.42rem;}
+  code{
+    font-family:var(--f-mono);font-size:.855em;background:var(--surface-2);
+    padding:.12em .38em;border-radius:3px;color:var(--ink);
+    border:1px solid var(--line-soft);
+  }
+
+  /* ---------- fact list ---------- */
+  .facts{
+    display:grid;grid-template-columns:1fr;gap:0;
+    border-top:1px solid var(--line);margin:0 0 1.6rem;
+  }
+  @media(min-width:640px){.facts{grid-template-columns:1fr 1fr;column-gap:clamp(24px,4vw,48px);}}
+  .fact{
+    display:grid;grid-template-columns:9.5rem minmax(0,1fr);gap:.9rem;
+    padding:.66rem 0;border-bottom:1px solid var(--line-soft);
+  }
+  .fact dt{
+    font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);padding-top:.28em;
+  }
+  .fact dd{margin:0;font-size:14.5px;color:var(--ink);}
+
+  /* ---------- figures strip ---------- */
+  .figures{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:1px;background:var(--line);border:1px solid var(--line);margin:1.6rem 0;
+  }
+  .fig{background:var(--surface);padding:1rem 1.05rem 1.05rem;}
+  .fig .v{
+    font-family:var(--f-mono);font-size:1.62rem;font-weight:500;letter-spacing:-.03em;
+    color:var(--ink);line-height:1;font-variant-numeric:tabular-nums;
+  }
+  .fig .v small{font-size:.55em;color:var(--muted);letter-spacing:0;margin-left:.14em;}
+  .fig .k{
+    font-size:12px;color:var(--muted);margin-top:.45rem;line-height:1.34;
+  }
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto;margin:1.2rem 0 1.4rem;border:1px solid var(--line);background:var(--surface);}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px;}
+  caption{
+    caption-side:top;text-align:left;font-family:var(--f-mono);font-size:11px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    padding:.7rem .95rem .1rem;
+  }
+  th{
+    text-align:left;font-family:var(--f-mono);font-weight:600;font-size:10.5px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    padding:.62rem .95rem;border-bottom:1px solid var(--line);
+    background:var(--surface-2);white-space:nowrap;vertical-align:bottom;
+  }
+  td{
+    padding:.6rem .95rem;border-bottom:1px solid var(--line-soft);
+    color:var(--ink-2);vertical-align:top;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--ink);}
+  td.mono{font-family:var(--f-mono);font-size:12.5px;color:var(--ink);white-space:nowrap;}
+  td b{color:var(--ink);font-weight:600;}
+
+  /* ---------- chips ---------- */
+  .chip{
+    display:inline-block;font-family:var(--f-mono);font-size:10px;font-weight:600;
+    letter-spacing:.09em;text-transform:uppercase;padding:.2em .5em;border-radius:2px;
+    white-space:nowrap;
+  }
+  .chip.crit{background:var(--crit-soft);color:var(--crit);}
+  .chip.warn{background:var(--warn-soft);color:var(--warn);}
+  .chip.ok{background:var(--ok-soft);color:var(--ok);}
+  .chip.acc{background:var(--accent-soft);color:var(--accent);}
+  .chip.och{background:var(--ochre-soft);color:var(--ochre);}
+
+  /* ---------- pivot comparison ---------- */
+  .pivot{
+    display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);
+    border:1px solid var(--line);margin:1.4rem 0;
+  }
+  @media(min-width:760px){.pivot{grid-template-columns:1fr 1fr;}}
+  .pivot > div{background:var(--surface);padding:1.15rem 1.2rem 1.3rem;}
+  .pivot h4{margin-top:0;}
+  .pivot .ver{
+    font-family:var(--f-display);font-size:1.05rem;font-weight:600;color:var(--ink);
+    margin:0 0 .1rem;
+  }
+  .pivot .date{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:.9rem;}
+  .pivot ul{margin:0;padding-left:1.05rem;font-size:13.5px;color:var(--ink-2);line-height:1.5;}
+  .pivot li{margin-bottom:.4rem;}
+  .pivot .old{color:var(--muted);}
+
+  /* ---------- architecture tiers ---------- */
+  .tiers{display:flex;flex-direction:column;gap:0;margin:1.4rem 0;}
+  .tier{
+    border:1px solid var(--line);background:var(--surface);padding:.95rem 1.1rem;
+    display:grid;grid-template-columns:1fr;gap:.5rem;
+  }
+  @media(min-width:700px){.tier{grid-template-columns:11rem minmax(0,1fr);gap:1.2rem;align-items:baseline;}}
+  .tier + .tier{border-top:none;}
+  .tier .name{
+    font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--ink);
+    letter-spacing:.04em;
+  }
+  .tier .name span{display:block;font-weight:400;color:var(--muted);font-size:11px;margin-top:.2rem;}
+  .tier .desc{font-size:13.5px;color:var(--ink-2);}
+  .conn{
+    height:22px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  /* ---------- schema cards ---------- */
+  .domain{margin:1.5rem 0;}
+  .domain > .dh{
+    display:flex;align-items:baseline;gap:.6rem;margin-bottom:.7rem;
+    border-bottom:1px solid var(--line);padding-bottom:.45rem;flex-wrap:wrap;
+  }
+  .domain > .dh .t{font-family:var(--f-display);font-weight:600;font-size:1.02rem;color:var(--ink);}
+  .domain > .dh .s{font-size:12.5px;color:var(--muted);}
+  .tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;}
+  .tbl{border:1px solid var(--line);background:var(--surface);}
+  .tbl .h{
+    font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--ink);
+    padding:.55rem .75rem;background:var(--surface-2);border-bottom:1px solid var(--line);
+  }
+  .tbl ul{list-style:none;margin:0;padding:.5rem .75rem .6rem;}
+  .tbl li{
+    font-family:var(--f-mono);font-size:11.5px;line-height:1.75;color:var(--ink-2);
+    display:flex;gap:.4rem;
+  }
+  .tbl li .pk{color:var(--ochre);font-weight:600;}
+  .tbl li .fk{color:var(--accent);font-weight:600;}
+
+  /* ---------- pipeline ---------- */
+  .pipe{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin:1.3rem 0;}
+  .step{background:var(--surface);padding:.8rem 1rem;display:grid;grid-template-columns:1.9rem minmax(0,1fr);gap:.8rem;align-items:baseline;}
+  .step .i{font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--accent);}
+  .step .t{font-family:var(--f-mono);font-size:12.5px;color:var(--ink);font-weight:500;}
+  .step .d{font-size:13px;color:var(--ink-2);margin-top:.18rem;}
+
+  /* ---------- formula cards ---------- */
+  .formulas{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:12px;margin:1.3rem 0;}
+  .fx{border:1px solid var(--line);background:var(--surface);padding:.95rem 1rem 1.05rem;}
+  .fx .n{font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:.1rem;}
+  .fx .fr{font-size:11.5px;color:var(--muted);font-style:italic;margin-bottom:.6rem;}
+  .fx .eq{
+    font-family:var(--f-mono);font-size:13px;color:var(--accent);
+    background:var(--accent-soft);padding:.5rem .6rem;border-radius:2px;
+    overflow-x:auto;white-space:nowrap;
+  }
+  .fx .note{font-size:12.5px;color:var(--ink-2);margin-top:.6rem;line-height:1.5;}
+  .fx .src{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);margin-top:.5rem;}
+
+  /* ---------- callout ---------- */
+  .callout{
+    border-left:3px solid var(--ochre);background:var(--surface);
+    padding:1rem 1.15rem;margin:1.3rem 0;max-width:70ch;
+  }
+  .callout .lbl{
+    font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ochre);margin-bottom:.4rem;
+  }
+  .callout p{margin:0;font-size:14px;}
+  .callout p + p{margin-top:.7rem;}
+
+  .worked{
+    border:1px solid var(--line);background:var(--surface);padding:1rem 1.15rem 1.1rem;
+    margin:1.3rem 0;
+  }
+  .worked ol{margin:.5rem 0 0;padding-left:1.2rem;font-family:var(--f-mono);font-size:12.5px;
+    color:var(--ink-2);line-height:1.85;}
+  .worked ol b{color:var(--ink);}
+
+  hr.rule{border:none;border-top:1px solid var(--line);margin:2.4rem 0;}
+
+  footer{
+    border-top:2px solid var(--ink);margin-top:clamp(48px,6vw,72px);padding-top:1.4rem;
+    font-family:var(--f-mono);font-size:11.5px;color:var(--muted);
+    display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;
+  }
+
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+
+<div class="shell">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Technical dossier</span><span class="sep">/</span>
+      <span>2nd-year internship — Data Science Engineering</span><span class="sep">/</span>
+      <span>Repository audit · 9 Sept 2026</span>
+    </div>
+    <h1>VendorIO</h1>
+    <p class="standfirst">
+      An inventory analytics and optimisation platform for small production
+      businesses — cafés, bakeries, kitchens. Everything needed to write the report:
+      the problem, the target user, the architecture, the algorithms, the numbers,
+      the limitations, and a chapter-by-chapter plan.
+    </p>
+    <div class="masthead-meta">
+      <span><b>6,449</b> lines of Python</span>
+      <span><b>103</b> source files</span>
+      <span><b>9</b> tables</span>
+      <span><b>34</b> endpoints</span>
+      <span><b>76</b> tests</span>
+      <span><b>5</b> commits · Apr → Jun 2026</span>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <nav class="rail" aria-label="Contents">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#s1"><span class="n">01</span><span>Project identity</span></a></li>
+        <li><a href="#s2"><span class="n">02</span><span>Problem &amp; target user</span></a></li>
+        <li><a href="#s3"><span class="n">03</span><span>The v1 → v2 pivot</span></a></li>
+        <li><a href="#s4"><span class="n">04</span><span>Architecture</span></a></li>
+        <li><a href="#s5"><span class="n">05</span><span>Data model</span></a></li>
+        <li><a href="#s6"><span class="n">06</span><span>Ingestion pipeline</span></a></li>
+        <li><a href="#s7"><span class="n">07</span><span>Analytics engine</span></a></li>
+        <li><a href="#s8"><span class="n">08</span><span>Dashboard</span></a></li>
+        <li><a href="#s9"><span class="n">09</span><span>Technology stack</span></a></li>
+        <li><a href="#s10"><span class="n">10</span><span>Quality &amp; CI/CD</span></a></li>
+        <li><a href="#s11"><span class="n">11</span><span>Project metrics</span></a></li>
+        <li><a href="#s12"><span class="n">12</span><span>Limitations &amp; future work</span></a></li>
+        <li><a href="#s13"><span class="n">13</span><span>Report structure</span></a></li>
+        <li><a href="#s14"><span class="n">14</span><span>Figures to produce</span></a></li>
+        <li><a href="#s15"><span class="n">15</span><span>Glossary</span></a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <!-- ================= 01 ================= -->
+      <section id="s1">
+        <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">Project identity</h2></div>
+
+        <p class="lead">
+          VendorIO is a decision-support web platform that turns a small business's sales
+          history into three concrete answers: <strong>what to reorder and when</strong>,
+          <strong>what each product actually costs</strong>, and <strong>how much will
+          sell over the next four weeks</strong>.
+        </p>
+
+        <dl class="facts">
+          <div class="fact"><dt>Name</dt><dd>VendorIO <span style="color:var(--muted)">(v0.1.0)</span></dd></div>
+          <div class="fact"><dt>Type</dt><dd>Monorepo — 3-tier web application</dd></div>
+          <div class="fact"><dt>Domain</dt><dd>Supply chain &amp; business intelligence</dd></div>
+          <div class="fact"><dt>Target sector</dt><dd>Food service &amp; artisanal production</dd></div>
+          <div class="fact"><dt>Deployment</dt><dd>Single-tenant, self-hosted (Docker)</dd></div>
+          <div class="fact"><dt>Access control</dt><dd>None — no authentication (MVP)</dd></div>
+          <div class="fact"><dt>Language</dt><dd>Python 3.11 (100%)</dd></div>
+          <div class="fact"><dt>Database</dt><dd>PostgreSQL 15</dd></div>
+          <div class="fact"><dt>Period</dt><dd>24 April → 15 June 2026</dd></div>
+          <div class="fact"><dt>Status</dt><dd>Working MVP, not deployed to production</dd></div>
+        </dl>
+
+        <h3>The value proposition in one sentence</h3>
+        <p>
+          A café owner drops in their CSV exports; within minutes they get a prioritised
+          reorder list, the real margin on every drink broken down ingredient by
+          ingredient, and a four-week revenue forecast — with no ERP, no subscription, and
+          without leaving their spreadsheets behind.
+        </p>
+      </section>
+
+      <!-- ================= 02 ================= -->
+      <section id="s2">
+        <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">Problem statement and target user</h2></div>
+
+        <h3>The business problem</h3>
+        <p>
+          A small production business lives with a permanent contradiction: it
+          <strong>sells finished products</strong> (a flat white, a croissant) but it
+          <strong>buys and stocks raw materials</strong> (coffee beans, milk, flour).
+          Between the two sits a recipe. As a result:
+        </p>
+        <ul class="body">
+          <li>The owner cannot say how many <em>days of trading</em> the remaining coffee represents — they see a sack, not a deadline.</li>
+          <li><strong>Stockouts</strong> are discovered on the morning they happen, which halts production.</li>
+          <li>Cash is tied up in slow-moving ingredients with no measurement of the <strong>holding cost</strong>.</li>
+          <li>The selling price is known; the <strong>true cost of goods</strong> per portion size rarely is.</li>
+          <li>Purchasing is done by instinct, with no <strong>economic order quantity</strong> and no <strong>reorder point</strong>.</li>
+        </ul>
+
+        <h3>Review of existing solutions</h3>
+        <div class="tw">
+          <table>
+            <caption>Competing options and why they fail this user</caption>
+            <thead><tr><th>Category</th><th>Examples</th><th>Limitation for a small business</th></tr></thead>
+            <tbody>
+              <tr><td><b>Spreadsheet</b></td><td>Excel, Google Sheets</td><td>No forecasting, no turnover calculation, manual errors, no bill of materials</td></tr>
+              <tr><td><b>ERP / WMS</b></td><td>SAP Business One, Odoo Inventory</td><td>Cost and integration complexity out of all proportion; months-long rollout</td></tr>
+              <tr><td><b>Point of sale</b></td><td>Square, Lightspeed</td><td><em>Sales</em> analytics, not <em>stock</em> optimisation; no recipe model</td></tr>
+              <tr><td><b>Generic BI</b></td><td>Power BI, Metabase</td><td>Visualises but does not decide: no EOQ, no alerting, no rules engine</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          <strong>VendorIO's niche:</strong> the decision layer missing between the
+          spreadsheet and the ERP — simple enough to be fed by CSV files, equipped enough
+          to produce quantified recommendations.
+        </p>
+
+        <h3>Actors</h3>
+        <div class="tw">
+          <table>
+            <caption>System actors — source material for the use-case diagram</caption>
+            <thead><tr><th>Actor</th><th>Role</th><th>Primary use cases</th></tr></thead>
+            <tbody>
+              <tr><td><b>Owner-manager</b> <span class="chip acc">primary</span></td><td>Runs the business</td><td>Import data · Review KPIs · Review alerts · Export reorder list · Analyse margins</td></tr>
+              <tr><td><b>Purchasing officer</b></td><td>Places supplier orders</td><td>Check stock levels · Download the reorder list · Track lead times</td></tr>
+              <tr><td><b>Point-of-sale system</b> <span class="chip och">secondary</span></td><td>Data source</td><td>Supplies CSV exports of orders (manual integration in the MVP)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <div class="lbl">Reference persona to cite in the report</div>
+          <p>
+            An independent café with 5 to 50 SKUs, 10 to 200 orders a day, no information
+            system, whose stock accounting lives in a notebook or a spreadsheet, and whose
+            owner has neither the time nor the training to operate an ERP. This persona
+            justifies every technical decision in the project: CSV import, single tenancy,
+            and one-command Docker deployment.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= 03 ================= -->
+      <section id="s3">
+        <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">The pivot: from product to bill of materials</h2></div>
+
+        <p class="lead">
+          This is <strong>the narrative core of the report</strong>. The project was
+          designed around a conventional e-commerce model, then entirely re-modelled six
+          weeks in, once that model proved wrong for the real target user.
+        </p>
+
+        <div class="pivot">
+          <div>
+            <div class="ver">v1 — the "product" model</div>
+            <div class="date">PRD of 24 April 2026 · abandoned</div>
+            <h4>Assumption</h4>
+            <ul class="old">
+              <li>You <strong>sell what you stock</strong>: a single <code>products</code> table carries selling price, unit cost and stock level at once.</li>
+              <li>5 tables: <code>products</code>, <code>orders</code>, <code>order_items</code>, <code>customers</code>, <code>inventory_snapshots</code>.</li>
+              <li>Cost of goods is a <code>cost_per_unit</code> column.</li>
+              <li>Consumption equals units sold.</li>
+            </ul>
+            <h4>Why it breaks</h4>
+            <ul class="old">
+              <li>A café does not stock "flat whites". It stocks milk and beans.</li>
+              <li>No way to model sizes (S/M/L), which consume different quantities.</li>
+              <li>No way to answer "I have three days of milk left".</li>
+            </ul>
+          </div>
+          <div>
+            <div class="ver">v2 — the "recipe" model</div>
+            <div class="date">Migration of 15 June 2026 · current</div>
+            <h4>Principle</h4>
+            <ul>
+              <li>Strict separation: <code>final_products</code> (what you sell, carries the <strong>price</strong>) versus <code>raw_materials</code> (what you stock, carries the <strong>cost</strong>, lead time and reorder point).</li>
+              <li>Between them, a <strong>bill of materials</strong>: <code>recipes</code> (product × size) and <code>recipe_items</code> (recipe → material, quantity).</li>
+              <li>Stock moves from the product to the material (<code>raw_material_inventory</code>).</li>
+              <li>Consumption is <strong>derived, never entered</strong>: it is computed by "exploding" each order line through its recipe.</li>
+            </ul>
+            <h4>What this unlocks</h4>
+            <ul>
+              <li>Days to stockout <em>per ingredient</em>.</li>
+              <li>True margin per product and per size.</li>
+              <li>EOQ and reorder point on what is actually purchased.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>How the migration was carried out</h3>
+        <p>
+          The Alembic migration <code>001_recipe_schema</code> (306 lines) is worth
+          documenting in detail: it does not merely create tables, it <strong>carries the
+          existing data across</strong>. Every legacy product becomes simultaneously a
+          finished product <em>and</em> a 1:1 raw material, with a default single-ingredient
+          recipe — so no history is lost and the user can refine their real recipes by CSV
+          afterwards.
+        </p>
+        <ul class="body">
+          <li>Creation of the 6 new tables and their indexes.</li>
+          <li><code>INSERT … SELECT</code> from <code>products</code> into <code>final_products</code> and then <code>raw_materials</code>, with <code>setval()</code> to resynchronise the identity sequences.</li>
+          <li>Generation of one default recipe per product (<code>size = NULL</code>) plus a <code>recipe_item</code> at quantity 1.</li>
+          <li>Addition of <code>size</code>, <code>recipe_id</code> and <code>unit_cost</code> to <code>order_items</code>, then <strong>backfilling</strong> of the historical cost.</li>
+          <li>Foreign keys switched from <code>products</code> to <code>final_products</code>, using <code>DO $$ … $$</code> blocks that handle both possible constraint names depending on whether the database was created by SQLAlchemy or by the seed SQL script.</li>
+          <li>Removal of the legacy tables.</li>
+        </ul>
+        <div class="callout">
+          <div class="lbl">Engineering decision worth highlighting</div>
+          <p>
+            The migration is <strong>deliberately irreversible</strong>:
+            <code>downgrade()</code> raises <code>NotImplementedError</code> with the
+            message "restore from backup". This is a stated choice rather than an
+            oversight — since the legacy table is dropped, an automatic downgrade would
+            give a false sense of safety.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= 04 ================= -->
+      <section id="s4">
+        <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Architecture</h2></div>
+
+        <p>
+          A conventional 3-tier architecture, organised as a <strong>monorepo</strong> of
+          four independent Python packages declared in <code>pyproject.toml</code>. The
+          presentation tier talks to the business tier over HTTP/JSON and never touches the
+          database directly, which makes the dashboard replaceable.
+        </p>
+
+        <div class="tiers">
+          <div class="tier">
+            <div class="name">Presentation<span>dashboard/ — 1,746 lines</span></div>
+            <div class="desc">Streamlit · 6 pages · reusable components (KPI cards, Plotly charts, tables) · <code>httpx</code> HTTP client · in-memory cache with a 5-minute TTL</div>
+          </div>
+          <div class="conn">↓ &nbsp; HTTP / JSON &nbsp; ↓</div>
+          <div class="tier">
+            <div class="name">Application<span>backend/ — 3,206 lines</span></div>
+            <div class="desc">FastAPI · 8 routers, 34 endpoints · logging middleware stamping a request ID and response time · global exception handler · auto-generated OpenAPI</div>
+          </div>
+          <div class="conn">↓ &nbsp; Python calls &nbsp; ↓</div>
+          <div class="tier">
+            <div class="name">Business &amp; models<span>backend/services/ + models/</span></div>
+            <div class="desc">Services (KPIs, inventory, costs, recommendations) · <code>models/</code> package for ARIMA forecasting, optimisation and RFM segmentation</div>
+          </div>
+          <div class="conn">↓ &nbsp; SQLAlchemy 2.0 ORM &nbsp; ↓</div>
+          <div class="tier">
+            <div class="name">Persistence<span>PostgreSQL 15</span></div>
+            <div class="desc">9 tables · JSONB columns for flexible attributes · versioned Alembic migrations · connection pool (10 + 20 overflow, <code>pool_pre_ping</code>)</div>
+          </div>
+        </div>
+
+        <h3>Backend layering</h3>
+        <div class="tw">
+          <table>
+            <caption>Responsibility of each layer</caption>
+            <thead><tr><th>Layer</th><th>Path</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td><b>Routes</b></td><td class="mono">backend/api/v1/</td><td>HTTP contract, parameter validation, error codes</td></tr>
+              <tr><td><b>Schemas</b></td><td class="mono">backend/schemas/</td><td>Pydantic request/response contracts, business validation (price ≥ 0)</td></tr>
+              <tr><td><b>Services</b></td><td class="mono">backend/services/</td><td>Business logic: KPIs, inventory health, costing, rules engine</td></tr>
+              <tr><td><b>CRUD</b></td><td class="mono">backend/crud/</td><td>Typed generic data access (<code>CRUDBase</code>) plus specific queries</td></tr>
+              <tr><td><b>ORM</b></td><td class="mono">backend/models/</td><td>Table definitions, relationships, constraints</td></tr>
+              <tr><td><b>Injection</b></td><td class="mono">backend/dependencies.py</td><td>Per-request database session via <code>Depends(get_db)</code>, guaranteed close</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <div class="lbl">Point to defend in the viva</div>
+          <p>
+            FastAPI's dependency injection makes it possible to <strong>substitute the
+            database in tests</strong>: the test suite overrides <code>get_db</code> with an
+            in-memory SQLite session (<code>StaticPool</code>), giving fast API tests that
+            need no container. This is exactly the kind of decision an examiner expects you
+            to be able to justify.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= 05 ================= -->
+      <section id="s5">
+        <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Data model</h2></div>
+
+        <p>
+          Nine tables across three domains. Foreign keys are marked
+          <span style="font-family:var(--f-mono);color:var(--accent);font-weight:600">→</span>,
+          primary keys
+          <span style="font-family:var(--f-mono);color:var(--ochre);font-weight:600">•</span>.
+        </p>
+
+        <div class="domain">
+          <div class="dh"><span class="t">Supply</span><span class="s">what the business buys and stocks</span></div>
+          <div class="tables">
+            <div class="tbl">
+              <div class="h">raw_materials</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li>name <span style="color:var(--muted)">unique</span></li>
+                <li>external_id <span style="color:var(--muted)">"MAT-001"</span></li>
+                <li>category</li>
+                <li>unit <span style="color:var(--muted)">g / ml / pcs</span></li>
+                <li>cost_per_unit</li>
+                <li>reorder_point</li>
+                <li>lead_time_days</li>
+              </ul>
+            </div>
+            <div class="tbl">
+              <div class="h">raw_material_inventory</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li><span class="fk">→</span> material_id</li>
+                <li>current_stock</li>
+                <li>created_at / updated_at</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="domain">
+          <div class="dh"><span class="t">Bill of materials</span><span class="s">the bridge between buying and selling</span></div>
+          <div class="tables">
+            <div class="tbl">
+              <div class="h">final_products</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li>name <span style="color:var(--muted)">unique</span></li>
+                <li>external_id</li>
+                <li>category</li>
+                <li>unit_price</li>
+              </ul>
+            </div>
+            <div class="tbl">
+              <div class="h">recipes</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li><span class="fk">→</span> product_id</li>
+                <li>external_id <span style="color:var(--muted)">"RCP-001"</span></li>
+                <li>size <span style="color:var(--muted)">S / M / L / NULL</span></li>
+                <li>unit_cost <span style="color:var(--muted)">NUM(10,4)</span></li>
+              </ul>
+            </div>
+            <div class="tbl">
+              <div class="h">recipe_items</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li><span class="fk">→</span> recipe_id</li>
+                <li><span class="fk">→</span> material_id</li>
+                <li>quantity_needed</li>
+                <li>unit</li>
+                <li>notes</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="domain">
+          <div class="dh"><span class="t">Sales</span><span class="s">what goes out, and what gets paid</span></div>
+          <div class="tables">
+            <div class="tbl">
+              <div class="h">customers</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li>email</li>
+                <li>first_order_date</li>
+                <li>total_spent</li>
+                <li>order_count</li>
+                <li>customer_attributes <span style="color:var(--muted)">JSONB</span></li>
+              </ul>
+            </div>
+            <div class="tbl">
+              <div class="h">orders</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li>order_date</li>
+                <li><span class="fk">→</span> customer_id</li>
+                <li>total_amount</li>
+                <li>status</li>
+                <li>metadata <span style="color:var(--muted)">JSONB</span></li>
+              </ul>
+            </div>
+            <div class="tbl">
+              <div class="h">order_items</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li><span class="fk">→</span> order_id</li>
+                <li><span class="fk">→</span> product_id</li>
+                <li><span class="fk">→</span> recipe_id</li>
+                <li>size · quantity</li>
+                <li>unit_price · unit_cost</li>
+                <li>line_total</li>
+              </ul>
+            </div>
+            <div class="tbl">
+              <div class="h">transactions</div>
+              <ul>
+                <li><span class="pk">•</span> id</li>
+                <li><span class="fk">→</span> order_id</li>
+                <li>amount_paid</li>
+                <li>payment_method</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tw">
+          <table>
+            <caption>Relationships and cardinalities — transfer directly into the class diagram</caption>
+            <thead><tr><th>Parent</th><th>Card.</th><th>Child</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">customers</td><td class="mono">1 — N</td><td class="mono">orders</td><td>A customer places many orders</td></tr>
+              <tr><td class="mono">orders</td><td class="mono">1 — N</td><td class="mono">order_items</td><td>Order composition (cascade delete)</td></tr>
+              <tr><td class="mono">orders</td><td class="mono">1 — N</td><td class="mono">transactions</td><td>Payments, possibly split</td></tr>
+              <tr><td class="mono">final_products</td><td class="mono">1 — N</td><td class="mono">recipes</td><td>One recipe per portion size</td></tr>
+              <tr><td class="mono">recipes</td><td class="mono">1 — N</td><td class="mono">recipe_items</td><td><b>The bill of materials</b> — ingredients and quantities</td></tr>
+              <tr><td class="mono">raw_materials</td><td class="mono">1 — N</td><td class="mono">recipe_items</td><td>One material is used in many recipes</td></tr>
+              <tr><td class="mono">raw_materials</td><td class="mono">1 — 1</td><td class="mono">raw_material_inventory</td><td>Current stock level (latest row wins)</td></tr>
+              <tr><td class="mono">recipes</td><td class="mono">1 — N</td><td class="mono">order_items</td><td>Trace of the cost frozen at the time of sale</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Two modelling decisions worth explaining</h3>
+
+        <div class="callout">
+          <div class="lbl">1 — The cost snapshot</div>
+          <p>
+            <code>order_items.unit_cost</code> is <strong>copied from the recipe at import
+            time</strong> and never changes afterwards. If the price of coffee doubles in
+            March, the margin computed on January's sales stays correct. This is the
+            principle of point-in-time correctness: cost of goods sold must never be
+            recalculated retroactively from today's prices. Every COGS calculation reads
+            this frozen column, not the live recipe.
+          </p>
+        </div>
+
+        <div class="callout">
+          <div class="lbl">2 — The uniqueness constraint on size</div>
+          <p>
+            <code>UNIQUE(order_id, product_id, size)</code>: one order can contain a small
+            latte <em>and</em> a large latte — two distinct lines with two different costs.
+            The v1 constraint <code>UNIQUE(order_id, product_id)</code> forbade this. It is
+            a concrete example of an integrity constraint dictated by the business domain,
+            worth citing in the design chapter.
+          </p>
+        </div>
+
+        <p style="font-size:13.5px;color:var(--muted);max-width:66ch">
+          <strong>Note for writing:</strong> two files are still inherited from v1 —
+          <code>backend/models/product.py</code> and
+          <code>backend/models/inventory.py</code>. Their tables are dropped by the
+          migration; the classes are no longer exported and are dead code. Do not include
+          them in the class diagram.
+        </p>
+      </section>
+
+      <!-- ================= 06 ================= -->
+      <section id="s6">
+        <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">The ingestion pipeline</h2></div>
+
+        <p class="lead">
+          This is the largest module in the project (<strong>1,029 lines</strong>,
+          <code>backend/api/v1/import_data.py</code>) and, for a data engineering report,
+          the richest to describe: nine import endpoints, a strict dependency order, and a
+          tolerant identifier-resolution chain.
+        </p>
+
+        <h3>The dependency order</h3>
+        <p>
+          You cannot import an order before its recipe, nor a recipe before its product.
+          The dashboard therefore enforces the order automatically:
+        </p>
+        <div class="pipe">
+          <div class="step"><span class="i">01</span><div><div class="t">raw_materials</div><div class="d">Raw materials and their purchasing characteristics (cost, lead time, reorder point). Also creates the initial inventory row.</div></div></div>
+          <div class="step"><span class="i">02</span><div><div class="t">raw_material_inventory</div><div class="d">Stock-level updates without touching the material master records.</div></div></div>
+          <div class="step"><span class="i">03</span><div><div class="t">products</div><div class="d">The finished products sold and their selling price.</div></div></div>
+          <div class="step"><span class="i">04</span><div><div class="t">recipes</div><div class="d">One row per product × size pair, carrying the unit cost of goods.</div></div></div>
+          <div class="step"><span class="i">05</span><div><div class="t">recipe_items</div><div class="d">The detailed bill of materials: which material, in what quantity, in which recipe.</div></div></div>
+          <div class="step"><span class="i">06</span><div><div class="t">orders</div><div class="d">Order headers, or a "flat" line-by-line format (detected automatically).</div></div></div>
+          <div class="step"><span class="i">07</span><div><div class="t">order_items</div><div class="d">Order lines attached to orders already present in the database.</div></div></div>
+          <div class="step"><span class="i">08</span><div><div class="t">transactions</div><div class="d">Payments received and payment methods.</div></div></div>
+          <div class="step"><span class="i">09</span><div><div class="t">/import/clear</div><div class="d">Full purge, in reverse dependency order, guarded by <code>confirm=true</code>.</div></div></div>
+        </div>
+
+        <h3>Notable mechanisms</h3>
+
+        <h4>Cascading identifier resolution</h4>
+        <p>
+          A real CSV never contains the database's internal identifiers. Every reference is
+          therefore resolved by trying, in order: the <strong>numeric id</strong>, then the
+          <strong>external identifier</strong> such as <code>MAT-001</code> or
+          <code>RCP-001</code> (the <code>external_id</code> columns added by migrations 002
+          and 003), then the <strong>exact name</strong>. This is what lets an owner keep
+          using their own codes.
+        </p>
+
+        <h4>Automatic order-format detection</h4>
+        <p>
+          The <code>/import/orders</code> endpoint inspects the columns: if
+          <code>product_id</code> and <code>quantity</code> are present it switches to
+          "flat" mode and groups rows into orders (by <code>order_id</code>, or failing
+          that by date + email); otherwise it treats the file as headers only. One
+          endpoint, two real-world formats.
+        </p>
+
+        <h4>Hard rejection of lines with no recipe</h4>
+        <p>
+          An order line whose product has no recipe for the requested size is
+          <strong>refused</strong>, with a message naming the row number and the corrective
+          action — otherwise the cost calculation would be silently wrong. In flat mode, if
+          a single line in a group fails, <strong>the entire order is discarded</strong>
+          (<code>db.expunge</code>): no partially loaded orders.
+        </p>
+
+        <h4>N+1 query optimisation</h4>
+        <p>
+          The order-line importer preloads every order, product and recipe into in-memory
+          dictionaries before the loop, instead of querying the database per row. For
+          10,000 rows this goes from tens of thousands of queries to three. It is a
+          concrete, measurable performance point worth putting forward.
+        </p>
+
+        <h4>Guided import interface</h4>
+        <p>
+          On the dashboard side (<code>0_import.py</code>, 776 lines):
+        </p>
+        <ul class="body">
+          <li><strong>Bulk drop</strong>: all files at once, recognised by filename (the suffixes <code>_template</code>, <code>_data</code>, <code>_export</code> are stripped) and imported in the correct order.</li>
+          <li><strong>Column mapping</strong>: every expected field has an alias dictionary (<code>price</code>, <code>sale_price</code>, <code>selling_price</code> → <code>unit_price</code>). Auto-detection proposes; the user corrects with a dropdown.</li>
+          <li><strong>Downloadable templates</strong> for each of the eight files, pre-filled with a coherent café example.</li>
+          <li><strong>Before/after preview</strong> of the mapping on the first five rows.</li>
+          <li><strong>Import report</strong>: created / updated / skipped, with the first 20 errors located by row number.</li>
+          <li><strong>Navigation gating</strong>: while no data exists, only the import page is visible.</li>
+        </ul>
+      </section>
+
+      <!-- ================= 07 ================= -->
+      <section id="s7">
+        <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">The analytics engine</h2></div>
+
+        <h3>The founding calculation: bill-of-materials explosion</h3>
+        <p>
+          Everything else follows from it. Stock is never decremented by sales; consumption
+          is <strong>reconstructed</strong> from order history by traversing the recipes:
+        </p>
+        <div class="fx" style="max-width:66ch;margin-bottom:1.2rem">
+          <div class="eq">D̄(material) = Σ (order_item.quantity × recipe_item.quantity_needed) ÷ 90</div>
+          <div class="note">
+            Summed over every order line of the last 90 days whose recipe contains the
+            material. The window is anchored on <strong>the most recent order date in the
+            database</strong>, not on today — which makes the analysis reproducible on a
+            historical dataset.
+          </div>
+          <div class="src">backend/services/inventory_service.py · _material_daily_consumption()</div>
+        </div>
+
+        <h3>Inventory management indicators</h3>
+        <div class="formulas">
+          <div class="fx">
+            <div class="n">Reorder point</div>
+            <div class="fr">ROP</div>
+            <div class="eq">ROP = D̄ × L</div>
+            <div class="note">L = supplier lead time in days (7 by default). A manually entered threshold overrides the computed one.</div>
+          </div>
+          <div class="fx">
+            <div class="n">Economic order quantity</div>
+            <div class="fr">EOQ — the Wilson formula</div>
+            <div class="eq">Q* = √(2·D·S / H)</div>
+            <div class="note">D = annual demand, S = ordering cost (25.00, configurable), H = annual holding cost per unit = cost × 25%.</div>
+          </div>
+          <div class="fx">
+            <div class="n">Days to stockout</div>
+            <div class="fr">DTS</div>
+            <div class="eq">DTS = stock ÷ D̄</div>
+            <div class="note">Drives the status: <span class="chip crit">&lt; 7 d critical</span> <span class="chip warn">&lt; 14 d warning</span> <span class="chip ok">otherwise ok</span></div>
+          </div>
+          <div class="fx">
+            <div class="n">Inventory turnover</div>
+            <div class="fr">Turnover ratio</div>
+            <div class="eq">T = (D̄ × 365) ÷ stock</div>
+            <div class="note">Classified by quartile: ≤ P25 "slow", ≥ P75 "fast", otherwise "average".</div>
+          </div>
+          <div class="fx">
+            <div class="n">Holding cost</div>
+            <div class="fr">Monthly carrying cost</div>
+            <div class="eq">H<sub>m</sub> = cost × stock × 0.25 ÷ 12</div>
+            <div class="note">An annual rate of 25% of the capital tied up, set by environment variable.</div>
+          </div>
+          <div class="fx">
+            <div class="n">Gross margin</div>
+            <div class="fr">Margin percentage</div>
+            <div class="eq">M = (Revenue − COGS) ÷ Revenue</div>
+            <div class="note">COGS computed from frozen costs: <code>Σ(unit_cost × quantity)</code> over order lines.</div>
+          </div>
+        </div>
+
+        <div class="worked">
+          <h4 style="margin-top:0">Worked example to reproduce in the report</h4>
+          <p style="font-size:13.5px;margin-bottom:.2rem">
+            Arabica beans: cost 0.0095 per gram · stock 20,000 g · reorder point 5,000 g ·
+            lead time 7 days. A flat white uses 18 g; you sell 60 a day.
+          </p>
+          <ol>
+            <li>D̄ = 60 × 18 = <b>1,080 g/day</b></li>
+            <li>DTS = 20,000 ÷ 1,080 = <b>18.5 days</b> → status <b>ok</b></li>
+            <li>Computed ROP = 1,080 × 7 = <b>7,560 g</b> <span style="color:var(--muted)">(but the entered threshold, 5,000 g, takes precedence)</span></li>
+            <li>Turnover = 1,080 × 365 ÷ 20,000 = <b>19.7 times/year</b></li>
+            <li>H<sub>m</sub> = 0.0095 × 20,000 × 0.25 ÷ 12 = <b>3.96 per month</b></li>
+            <li>Annual D = 1,080 × 365 = 394,200 g · H = 0.0095 × 0.25 = 0.002375</li>
+            <li>Q* = √(2 × 394,200 × 25 ÷ 0.002375) ≈ <b>91,100 g ≈ 91 kg</b></li>
+          </ol>
+        </div>
+
+        <h3>Demand forecasting</h3>
+        <div class="tw">
+          <table>
+            <caption>Time-series model — models/forecasting/</caption>
+            <thead><tr><th>Aspect</th><th>Choice made</th><th>Justification</th></tr></thead>
+            <tbody>
+              <tr><td><b>Model</b></td><td>ARIMA (statsmodels)</td><td>Chosen <em>against</em> the Prophet specified in the requirements: no C++ toolchain, light install, sufficient on short series</td></tr>
+              <tr><td><b>Order selection</b></td><td>Grid over (1,1,1), (2,1,1), (1,1,2), (2,1,2), AIC criterion</td><td>A compromise between full auto-ARIMA and a fixed order; four fits per request</td></tr>
+              <tr><td><b>Preparation</b></td><td>Re-indexed on a complete calendar, missing days filled with 0</td><td>ARIMA requires a regular frequency; a day with no sales is real information</td></tr>
+              <tr><td><b>Validation</b></td><td>MAPE on the final 20% (minimum 7 days), refit on the training split</td><td>Avoids in-sample evaluation; the metric is exposed by the API and displayed in the UI</td></tr>
+              <tr><td><b>Uncertainty</b></td><td>80% confidence interval (<code>alpha=0.2</code>)</td><td>Tighter than 95% and more actionable for a reorder decision</td></tr>
+              <tr><td><b>Guard rail</b></td><td>Minimum 14 days of history, otherwise an explicit HTTP 400</td><td>Refusing a forecast is better than producing a wrong one</td></tr>
+              <tr><td><b>Outputs</b></td><td>Daily forecast plus weekly aggregation</td><td>Negative bounds clamped to 0: negative revenue is meaningless</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>The recommendation engine</h3>
+        <p>
+          A <strong>rules-based</strong> approach, deliberately non-probabilistic: every
+          recommendation must be explainable to the owner in one sentence. Four rules,
+          sorted by urgency.
+        </p>
+        <div class="tw">
+          <table>
+            <caption>Alert generation rules — backend/services/recommendation_service.py</caption>
+            <thead><tr><th>Rule</th><th>Condition</th><th>Urgency</th><th>Action produced</th></tr></thead>
+            <tbody>
+              <tr><td><b>Stockout risk</b></td><td>DTS ≤ 14 days</td><td><span class="chip crit">critical</span> if ≤ 7 d, else <span class="chip warn">high</span></td><td>Recommend the EOQ quantity (floor: 2 × ROP)</td></tr>
+              <tr><td><b>Slow mover</b></td><td>Turnover ≤ P25 and stock &gt; 0</td><td><span class="chip warn">medium</span></td><td>Space out orders; quantifies the annual holding-cost saving</td></tr>
+              <tr><td><b>Overstock</b></td><td>DTS &gt; 180 days</td><td><span class="chip ok">low</span></td><td>Reduce the next order; quantifies the cash freed up</td></tr>
+              <tr><td><b>Bulk order</b></td><td>Consumption in the top 10% and saving &gt; 50</td><td><span class="chip ok">low</span></td><td>Order the EOQ quantity to capture a 5% discount</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Customer segmentation</h3>
+        <p>
+          Two implementations coexist — a point of honesty worth mentioning. The API serves
+          a simple segmentation by order count (new / returning / loyal), while
+          <code>models/analytics/segmentation.py</code> contains a full <strong>RFM
+          segmentation</strong> (Recency, Frequency, Monetary) with quintile scoring and six
+          segments (<em>champions</em>, <em>loyal</em>, <em>at risk</em>…), tested but
+          <strong>not wired into the API</strong>. Excellent material for the future-work
+          section.
+        </p>
+      </section>
+
+      <!-- ================= 08 ================= -->
+      <section id="s8">
+        <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">The dashboard</h2></div>
+
+        <div class="tw">
+          <table>
+            <caption>The six pages of the Streamlit application</caption>
+            <thead><tr><th>Page</th><th>Content</th><th>Interactions</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>0 · Import</b><br><span style="color:var(--muted);font-size:12px">776 lines</span></td>
+                <td>Ten tabs: bulk drop, the 8 file types, data management. CSV templates, column mapping, detailed import reports.</td>
+                <td>Multi-file upload, mapping dropdowns, template downloads, guarded purge</td>
+              </tr>
+              <tr>
+                <td><b>1 · Overview</b></td>
+                <td>Seven KPIs (revenue, profit, orders, repeat rate, average order value, customers), revenue trend line, top 5 and bottom 5 products, customer segment table</td>
+                <td>Date-range picker, bottom-5 expander</td>
+              </tr>
+              <tr>
+                <td><b>2 · Inventory</b></td>
+                <td>Critical / warning / needs-reorder counters and total holding cost, inventory health table, turnover × days-remaining scatter, holding cost per material</td>
+                <td>Text search, status filter, <b>CSV export of the reorder list</b></td>
+              </tr>
+              <tr>
+                <td><b>3 · Costs</b></td>
+                <td>Revenue / COGS / gross profit / margin rate, margin gauge, alert on products below 10% margin, COGS + holding versus revenue breakdown</td>
+                <td>Chart/table tabs, CSV export of the profitability report</td>
+              </tr>
+              <tr>
+                <td><b>4 · Forecasts</b></td>
+                <td>Revenue forecast with confidence band, MAPE and model displayed, per-product forecast, weekly summary</td>
+                <td>1-to-12-week slider, product selector</td>
+              </tr>
+              <tr>
+                <td><b>5 · Alerts</b></td>
+                <td>Recommendations sorted by urgency, cumulative potential savings, contextual alert banner</td>
+                <td>Multi-select filters by urgency and type, action tracker</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Presentation-tier implementation choices</h3>
+        <ul class="body">
+          <li><strong>TTL cache</strong> of 5 minutes on every API call (<code>st.cache_data</code>) — avoids recomputing KPIs on every filter interaction.</li>
+          <li><strong>Conditional navigation</strong>: the five analytics pages appear only once the database holds data, which removes the confusing empty screen.</li>
+          <li><strong>Graceful degradation</strong>: the HTTP client distinguishes a server error from an unreachable backend, with a message tailored to each case.</li>
+          <li><strong>Centralised colour semantics</strong> in <code>dashboard/config.py</code>: statuses and urgencies share a single palette.</li>
+          <li><strong>Plotly charts</strong>: lines, bars, scatter plots, a gauge, and a confidence band built by stacking traces.</li>
+        </ul>
+      </section>
+
+      <!-- ================= 09 ================= -->
+      <section id="s9">
+        <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Technology stack and justification</h2></div>
+
+        <p>
+          The table below transposes directly into the "working environment" chapter. The
+          right-hand column matters most: examiners penalise unjustified technology
+          choices.
+        </p>
+
+        <div class="tw">
+          <table>
+            <caption>Technology choices and rationale</caption>
+            <thead><tr><th>Need</th><th>Technology</th><th>Version</th><th>Justification</th></tr></thead>
+            <tbody>
+              <tr><td>Web API</td><td><b>FastAPI</b></td><td class="mono">0.104</td><td>Validation from type annotations, automatic OpenAPI documentation, native dependency injection, async performance</td></tr>
+              <tr><td>ASGI server</td><td><b>Uvicorn</b></td><td class="mono">0.24</td><td>The reference server for FastAPI, hot reload in development</td></tr>
+              <tr><td>ORM</td><td><b>SQLAlchemy</b></td><td class="mono">2.0</td><td>Typed <code>Mapped[]</code> API compatible with static checking, database independence (PostgreSQL in production, SQLite in tests)</td></tr>
+              <tr><td>Migrations</td><td><b>Alembic</b></td><td class="mono">1.12</td><td>Schema versioning, data migrations scriptable in raw SQL</td></tr>
+              <tr><td>Validation</td><td><b>Pydantic</b></td><td class="mono">2.4</td><td>Explicit input/output contracts, business validators, typed configuration from environment variables</td></tr>
+              <tr><td>Database</td><td><b>PostgreSQL</b></td><td class="mono">15</td><td>ACID compliance essential for financial data, JSONB for variable attributes without migration, efficient indexing</td></tr>
+              <tr><td>Time series</td><td><b>statsmodels</b></td><td class="mono">0.14</td><td>ARIMA with confidence intervals; preferred over Prophet to avoid the C++ build chain</td></tr>
+              <tr><td>ML metrics</td><td><b>scikit-learn</b></td><td class="mono">1.3</td><td>MAPE computation, validation utilities</td></tr>
+              <tr><td>Data handling</td><td><b>pandas / numpy</b></td><td class="mono">2.1 / 1.26</td><td>CSV reading and normalisation, aggregations, quantiles</td></tr>
+              <tr><td>User interface</td><td><b>Streamlit</b></td><td class="mono">1.28</td><td>A data interface in pure Python — no JavaScript context to maintain on an internship project</td></tr>
+              <tr><td>Visualisation</td><td><b>Plotly</b></td><td class="mono">5.17</td><td>Interactive charts, zoom and hover with no extra code</td></tr>
+              <tr><td>HTTP client</td><td><b>httpx</b></td><td class="mono">0.25</td><td>Modern API, timeout handling, also used by the test client</td></tr>
+              <tr><td>Dependencies</td><td><b>Poetry</b></td><td class="mono">1.7</td><td>Version locking (<code>poetry.lock</code>), reproducible builds, dev/prod groups</td></tr>
+              <tr><td>Testing</td><td><b>pytest + pytest-cov</b></td><td class="mono">7.4</td><td>Composable fixtures, coverage measurement</td></tr>
+              <tr><td>Code quality</td><td><b>ruff + black</b></td><td class="mono">0.1 / 23.10</td><td>Very fast linting (errors, imports, naming) and deterministic formatting at 100 columns</td></tr>
+              <tr><td>Containerisation</td><td><b>Docker Compose</b></td><td class="mono">3.9</td><td>Multi-stage build (base → backend / dashboard), PostgreSQL health check, dev/prod parity</td></tr>
+              <tr><td>Continuous integration</td><td><b>GitHub Actions</b></td><td class="mono">—</td><td>Two workflows (tests + lint), Poetry caching, coverage upload</td></tr>
+              <tr><td>Documentation</td><td><b>MkDocs</b></td><td class="mono">—</td><td>Markdown documentation, API reference generated from the OpenAPI schema</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= 10 ================= -->
+      <section id="s10">
+        <div class="sec-head"><span class="sec-num">10</span><h2 class="sec-title">Quality, testing and engineering practice</h2></div>
+
+        <h3>Practices actually applied</h3>
+        <ul class="body">
+          <li><strong>Systematic type annotations</strong> on function signatures, including return types.</li>
+          <li><strong>Google-style docstrings</strong> (Args / Returns / Example) throughout the <code>models/</code> package, with runnable examples.</li>
+          <li><strong>Dedicated business exceptions</strong> — <code>NotFoundError</code>, <code>ValidationError</code>, <code>ConflictError</code>, <code>InsufficientDataError</code> — each wrapping the correct HTTP status.</li>
+          <li><strong>Traceable logging</strong>: every request gets a short ID, with method, path, status and duration in milliseconds.</li>
+          <li><strong>Externalised configuration</strong> via <code>BaseSettings</code> and <code>.env</code>; no secrets in the repository.</li>
+          <li><strong>Conventional commits</strong> (<code>feat:</code>, <code>chore:</code>) across the entire history.</li>
+          <li><strong>Continuous integration</strong> on <code>push</code> and <code>pull_request</code> to <code>main</code> and <code>develop</code>.</li>
+        </ul>
+
+        <h3>Actual state of test coverage</h3>
+        <div class="tw">
+          <table>
+            <caption>76 test functions — state verified on 9 September 2026</caption>
+            <thead><tr><th>Suite</th><th>Tests</th><th>Scope</th><th>State</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">models/optimization</td><td class="num">10</td><td>EOQ, ROP, DTS, slow movers, holding cost</td><td><span class="chip ok">runnable</span></td></tr>
+              <tr><td class="mono">models/analytics</td><td class="num">5</td><td>RFM scoring, segments, profitability, low margins</td><td><span class="chip ok">runnable</span></td></tr>
+              <tr><td class="mono">models/forecasting</td><td class="num">5</td><td>Fit, predict, confidence intervals, misuse errors</td><td><span class="chip ok">runnable</span></td></tr>
+              <tr><td class="mono">dashboard/tests</td><td class="num">10</td><td>Currency, percentage and date formatting, null handling</td><td><span class="chip ok">runnable</span></td></tr>
+              <tr><td class="mono">backend/tests/test_api</td><td class="num">16</td><td>Product, order and inventory endpoints</td><td><span class="chip crit">blocked</span></td></tr>
+              <tr><td class="mono">backend/tests/test_services</td><td class="num">23</td><td>Inventory, cost and metrics services</td><td><span class="chip crit">blocked</span></td></tr>
+              <tr><td class="mono">backend/tests/test_crud</td><td class="num">7</td><td>Generic CRUD operations</td><td><span class="chip crit">blocked</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout" style="border-left-color:var(--crit)">
+          <div class="lbl" style="color:var(--crit)">Verified defect — fix before submission</div>
+          <p>
+            <code>backend/tests/conftest.py</code> line 10 imports <code>Product</code> and
+            <code>InventorySnapshot</code> from <code>backend.models</code>. Both classes
+            stopped being exported when the recipe schema landed on 15 June. The import
+            fails at collection time, which prevents the <strong>46 backend tests</strong>
+            from running at all. The same stale import breaks
+            <code>scripts/load_sample_data.py</code>, and therefore sample-data loading.
+          </p>
+          <p>
+            <strong>Fix:</strong> rewrite the fixtures around <code>RawMaterial</code>,
+            <code>FinalProduct</code>, <code>Recipe</code> and <code>RecipeItem</code>.
+            This is fixture redesign, not a rename: the service tests assume stock is
+            carried by the product.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= 11 ================= -->
+      <section id="s11">
+        <div class="sec-head"><span class="sec-num">11</span><h2 class="sec-title">Project metrics</h2></div>
+
+        <div class="figures">
+          <div class="fig"><div class="v">6,449</div><div class="k">lines of Python</div></div>
+          <div class="fig"><div class="v">103</div><div class="k">source files</div></div>
+          <div class="fig"><div class="v">34</div><div class="k">REST endpoints</div></div>
+          <div class="fig"><div class="v">9</div><div class="k">relational tables</div></div>
+          <div class="fig"><div class="v">76</div><div class="k">test functions</div></div>
+          <div class="fig"><div class="v">3</div><div class="k">Alembic migrations</div></div>
+        </div>
+
+        <div class="tw">
+          <table>
+            <caption>Code distribution by package</caption>
+            <thead><tr><th>Package</th><th>Code</th><th>Tests</th><th>Files</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">backend/</td><td class="num">3,206</td><td class="num">431</td><td class="num">61</td><td>API, services, ORM, import</td></tr>
+              <tr><td class="mono">dashboard/</td><td class="num">1,746</td><td class="num">44</td><td class="num">21</td><td>Streamlit interface</td></tr>
+              <tr><td class="mono">models/</td><td class="num">573</td><td class="num">188</td><td class="num">18</td><td>Forecasting, optimisation, segmentation</td></tr>
+              <tr><td class="mono">scripts/</td><td class="num">261</td><td class="num">—</td><td class="num">3</td><td>Initialisation, sample data, docs generation</td></tr>
+              <tr><td><b>Total</b></td><td class="num"><b>5,786</b></td><td class="num"><b>663</b></td><td class="num"><b>103</b></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tw">
+          <table>
+            <caption>Actual development timeline (Git history)</caption>
+            <thead><tr><th>Date</th><th>Milestone</th><th>Volume</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">24 Apr 2026</td><td><b>Project scaffold</b> — full monorepo, 5 tables, API, dashboard, tests, CI</td><td class="num">—</td></tr>
+              <tr><td class="mono">12 May 2026</td><td>Change-log cleanup</td><td class="num">—</td></tr>
+              <tr><td class="mono">12 May 2026</td><td><b>First CSV imports</b> — products and orders, import page</td><td class="num">+703 / −53</td></tr>
+              <tr><td class="mono">13 May 2026</td><td><b>Inventory import</b> — stock updates, customer statistics, navigation gating</td><td class="num">+513 / −119</td></tr>
+              <tr><td class="mono">15 Jun 2026</td><td><b>Recipe schema</b> — raw materials, bill of materials, transactions, 3 migrations, all 4 services rewritten</td><td class="num">+2,375 / −906</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:13.5px;color:var(--muted);max-width:66ch">
+          That last commit alone accounts for <strong>41% of every line changed in the
+          project</strong> and touches 24 files. It is the quantified argument behind the
+          "pivot" section.
+        </p>
+      </section>
+
+      <!-- ================= 12 ================= -->
+      <section id="s12">
+        <div class="sec-head"><span class="sec-num">12</span><h2 class="sec-title">Limitations and future work</h2></div>
+
+        <p class="lead">
+          An internship report is judged as much on clear-sightedness as on delivery.
+          Every limitation below was <strong>verified in the code</strong>, and each one
+          converts directly into a future-work item.
+        </p>
+
+        <div class="tw">
+          <table>
+            <caption>Verified limitations and corresponding future work</caption>
+            <thead><tr><th>Severity</th><th>Limitation found</th><th>Future work</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="chip crit">blocking</span></td>
+                <td><b>The backend test suite does not run.</b> <code>conftest.py</code> imports models deleted by the recipe migration: 46 tests fail at collection.</td>
+                <td>Rewrite the fixtures on the recipe schema and restore the 80% coverage target</td>
+              </tr>
+              <tr>
+                <td><span class="chip crit">blocking</span></td>
+                <td><b>The sample-data script is broken</b> for the same reason — it still creates <code>Product</code> rows.</td>
+                <td>Generate a synthetic dataset coherent with the bill of materials (materials, recipes, sizes)</td>
+              </tr>
+              <tr>
+                <td><span class="chip warn">major</span></td>
+                <td><b>Stock is never decremented by sales.</b> <code>current_stock</code> is only ever written by imports; the freshness of days-to-stockout depends on the last inventory upload.</td>
+                <td>Deduct consumed quantities when orders are imported, or keep a stock-movement ledger</td>
+              </tr>
+              <tr>
+                <td><span class="chip warn">major</span></td>
+                <td><b>Recipe cost is entered, not calculated.</b> <code>recipes.unit_cost</code> comes from the CSV; it is never recomputed as Σ(quantity × material cost), even though all the data needed is in the database.</td>
+                <td>Derive cost of goods from the bill of materials and recompute it whenever a material price changes</td>
+              </tr>
+              <tr>
+                <td><span class="chip warn">major</span></td>
+                <td><b>No authentication</b>; CORS open to all origins; single tenant.</td>
+                <td>OAuth2/JWT authentication, per-tenant isolation, origin restriction</td>
+              </tr>
+              <tr>
+                <td><span class="chip warn">major</span></td>
+                <td><b>The ARIMA model is refitted on every call</b> — four fits per request, with no persistence or caching.</td>
+                <td>Scheduled training, model serialisation, and a real background task behind <code>/forecasts/retrain</code>, which today only replies "queued"</td>
+              </tr>
+              <tr>
+                <td><span class="chip warn">major</span></td>
+                <td><b>Duplicated logic.</b> <code>models/optimization</code> and <code>models/analytics</code> are called by no endpoint: the backend services reimplement EOQ, ROP and margins. Only <code>models/forecasting</code> is actually wired in.</td>
+                <td>Make the services thin adapters over the <code>models/</code> package, and wire in the RFM segmentation that is already written and tested</td>
+              </tr>
+              <tr>
+                <td><span class="chip ok">minor</span></td>
+                <td><b>Action tracking is ephemeral.</b> <code>POST /recommendations/apply</code> persists nothing; state lives in the Streamlit session.</td>
+                <td>A recommendation-tracking table with status, date and author</td>
+              </tr>
+              <tr>
+                <td><span class="chip ok">minor</span></td>
+                <td><b>Potential savings are extracted by regular expression</b> from the English text of each recommendation.</td>
+                <td>Expose a dedicated numeric field in the recommendation payload</td>
+              </tr>
+              <tr>
+                <td><span class="chip ok">minor</span></td>
+                <td><b>The architecture documentation is stale</b>: <code>docs/architecture.md</code> still describes the five v1 tables.</td>
+                <td>Regenerate the documentation and fold in the recipe schema</td>
+              </tr>
+              <tr>
+                <td><span class="chip ok">minor</span></td>
+                <td><b>Currency and locale are fixed</b>: the currency symbol is hard-coded.</td>
+                <td>Make currency and number formatting configurable (relevant for a Tunisian deployment)</td>
+              </tr>
+              <tr>
+                <td><span class="chip ok">minor</span></td>
+                <td><b>Manual import only</b>: no synchronisation with a point-of-sale system.</td>
+                <td>Shopify/WooCommerce connectors or webhooks, explicitly deferred to phase 2 by the requirements document</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <div class="lbl">How to frame this in the report</div>
+          <p>
+            Do not present these as failures. The expected framing is
+            <strong>acknowledged technical debt</strong>: "the data-model change of 15 June
+            was carried through the entire application chain — migrations, services, API,
+            interface — but the test suite and utility scripts have not yet been realigned,
+            which constitutes the first identified work item." That is an engineer's
+            observation, not a confession.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= 13 ================= -->
+      <section id="s13">
+        <div class="sec-head"><span class="sec-num">13</span><h2 class="sec-title">Report structure</h2></div>
+
+        <p>
+          The canonical structure of a Tunisian second-year internship report, with the
+          VendorIO content to place in each part. Target length for a second year:
+          <strong>30 to 45 pages</strong> excluding appendices. French section names are
+          given alongside, since the template itself is French.
+        </p>
+
+        <div class="tw">
+          <table>
+            <caption>Front matter</caption>
+            <thead><tr><th>Element</th><th>Content</th></tr></thead>
+            <tbody>
+              <tr><td>Cover page <span style="color:var(--muted)">— page de garde</span></td><td>Institution, host company logo, title, academic and industrial supervisors, academic year</td></tr>
+              <tr><td>Acknowledgements <span style="color:var(--muted)">— remerciements</span></td><td>Company supervisor, academic supervisor, host team</td></tr>
+              <tr><td>Table of contents</td><td>Auto-generated, two levels deep</td></tr>
+              <tr><td>List of figures / tables</td><td>Numbered by chapter: Figure 3.2, Table 4.1…</td></tr>
+              <tr><td>List of acronyms</td><td>API, REST, ORM, EOQ, ROP, DTS, COGS, MAPE, ARIMA, RFM, CI/CD, JSONB, CRUD, BOM, MVP</td></tr>
+              <tr><td>Abstract <span style="color:var(--muted)">— résumé</span></td><td>Many Tunisian schools require a French (and sometimes Arabic) abstract even for an English report — check your school's template</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tw">
+          <table>
+            <caption>Body of the report</caption>
+            <thead><tr><th>Chapter</th><th>Sections</th><th>VendorIO material to draw on</th><th>Pages</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>General introduction</b></td>
+                <td>—</td>
+                <td>Internship context, problem statement in three sentences, outline of the report</td>
+                <td class="num">1–2</td>
+              </tr>
+              <tr>
+                <td><b>Ch. 1</b><br>General framework<br><span style="color:var(--muted);font-size:12px">cadre général</span></td>
+                <td>Host organisation · Context · Review of existing solutions · Critique · Proposed solution · Methodology</td>
+                <td>All of §02: business problem, competitor table, VendorIO's niche. Methodology: iterative development, conventional commits, continuous integration</td>
+                <td class="num">6–8</td>
+              </tr>
+              <tr>
+                <td><b>Ch. 2</b><br>Requirements analysis<br><span style="color:var(--muted);font-size:12px">analyse et spécification</span></td>
+                <td>Actors · Functional requirements · Non-functional requirements · Use cases · Backlog</td>
+                <td>Actor table (§02). Functional: the 6 pages (§08). Non-functional: response time &lt; 500 ms, MAPE &lt; 10%, coverage &gt; 80%, Docker portability</td>
+                <td class="num">6–8</td>
+              </tr>
+              <tr>
+                <td><b>Ch. 3</b><br>Design<br><span style="color:var(--muted);font-size:12px">conception</span></td>
+                <td>Architecture · Data model · Diagrams · Technology choices</td>
+                <td><b>The densest chapter.</b> §04 (3-tier, layering), §05 (9 tables, cardinalities, cost snapshot), §03 (the v1→v2 pivot — this is where it earns its value), §09 (justifications)</td>
+                <td class="num">8–12</td>
+              </tr>
+              <tr>
+                <td><b>Ch. 4</b><br>Implementation<br><span style="color:var(--muted);font-size:12px">réalisation</span></td>
+                <td>Environment · Import pipeline · Algorithms · Interfaces · Testing</td>
+                <td>§06 (pipeline, 1,029 lines), §07 (formulas and the worked example), screenshots of the 6 pages, §10 (quality and testing), §11 (metrics)</td>
+                <td class="num">10–14</td>
+              </tr>
+              <tr>
+                <td><b>Conclusion and future work</b></td>
+                <td>—</td>
+                <td>Technical assessment, personal takeaways, §12 turned into a roadmap</td>
+                <td class="num">2–3</td>
+              </tr>
+              <tr>
+                <td><b>References</b></td>
+                <td>—</td>
+                <td>Documentation for FastAPI, SQLAlchemy, Streamlit, statsmodels, Alembic, Poetry, Plotly</td>
+                <td class="num">1</td>
+              </tr>
+              <tr>
+                <td><b>Appendices</b></td>
+                <td>—</td>
+                <td>CSV templates, an extract of the OpenAPI schema, <code>docker-compose.yml</code>, annotated migration <code>001</code></td>
+                <td class="num">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <div class="lbl">Three angles that separate a good report from an average one</div>
+          <p>
+            <strong>1. Tell the story of the pivot.</strong> Most reports describe a system
+            as if it were born perfect. Explaining why the "product" model was wrong, what
+            it cost to change it, and what the bill of materials unlocked is what
+            demonstrates engineering judgement.
+          </p>
+          <p>
+            <strong>2. Show the numbers.</strong> Carry the Arabica bean example (§07)
+            through end to end: 1,080 g/day, 18.5 days to stockout, 91 kg economic order
+            quantity. A report that shows one complete calculation beats a report that
+            quotes six formulas.
+          </p>
+          <p>
+            <strong>3. Own the limitations.</strong> §12 is an asset, not a weakness: it
+            proves you can audit your own code.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= 14 ================= -->
+      <section id="s14">
+        <div class="sec-head"><span class="sec-num">14</span><h2 class="sec-title">Figures to produce</h2></div>
+
+        <p>
+          A Tunisian report at this level typically carries <strong>15 to 25
+          figures</strong>. These are the ones derivable directly from the project.
+        </p>
+
+        <div class="tw">
+          <table>
+            <caption>Figure inventory and recommended tools</caption>
+            <thead><tr><th>#</th><th>Figure</th><th>Chapter</th><th>Source / tool</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>3-tier architecture</td><td>Ch. 3</td><td>§04 · draw.io</td></tr>
+              <tr><td class="num">2</td><td>Package diagram (monorepo)</td><td>Ch. 3</td><td>Repository tree · draw.io</td></tr>
+              <tr><td class="num">3</td><td>Use-case diagram</td><td>Ch. 2</td><td>Actor table §02 · StarUML / PlantUML</td></tr>
+              <tr><td class="num">4</td><td>Class diagram / logical data model</td><td>Ch. 3</td><td>§05 — 9 tables and cardinalities · StarUML</td></tr>
+              <tr><td class="num">5</td><td>PostgreSQL relational schema</td><td>Ch. 3</td><td>Export from pgAdmin or DBeaver</td></tr>
+              <tr><td class="num">6</td><td>Sequence diagram "Import a CSV"</td><td>Ch. 3</td><td>Browser → Streamlit → FastAPI → service → PostgreSQL</td></tr>
+              <tr><td class="num">7</td><td>Sequence diagram "View alerts"</td><td>Ch. 3</td><td>Include the TTL cache and the rules engine</td></tr>
+              <tr><td class="num">8</td><td>Activity diagram of the import pipeline</td><td>Ch. 4</td><td>§06 — the 9 steps and the rejection points</td></tr>
+              <tr><td class="num">9</td><td>v1 versus v2 model comparison</td><td>Ch. 3</td><td>§03 — an original figure, high value</td></tr>
+              <tr><td class="num">10</td><td>Gantt chart</td><td>Ch. 1</td><td>§11 — real dates from the Git history</td></tr>
+              <tr><td class="num">11–16</td><td>Screenshots of the 6 dashboard pages</td><td>Ch. 4</td><td>The running application, with data loaded</td></tr>
+              <tr><td class="num">17</td><td>Forecast curve with confidence band</td><td>Ch. 4</td><td>Forecasts page, MAPE visible</td></tr>
+              <tr><td class="num">18</td><td>Turnover × days-to-stockout scatter</td><td>Ch. 4</td><td>Inventory page — illustrates the status classification</td></tr>
+              <tr><td class="num">19</td><td>Swagger documentation screenshot</td><td>Ch. 4</td><td><code>localhost:8000/docs</code></td></tr>
+              <tr><td class="num">20</td><td>Test coverage report</td><td>Ch. 4</td><td><code>pytest --cov --cov-report=html</code> <span class="chip warn">after fixing §12</span></td></tr>
+              <tr><td class="num">21</td><td>Continuous integration workflow run</td><td>Ch. 4</td><td>GitHub Actions tab</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= 15 ================= -->
+      <section id="s15">
+        <div class="sec-head"><span class="sec-num">15</span><h2 class="sec-title">Glossary</h2></div>
+
+        <p>
+          Domain and technical terms to define once and then use consistently — terminology
+          drift is a classic criticism in a viva. The French column is kept because most
+          Tunisian schools require a French abstract, and because the oral defence may be
+          conducted in French.
+        </p>
+
+        <div class="tw">
+          <table>
+            <caption>Domain and technical terminology</caption>
+            <thead><tr><th>English (code)</th><th>Definition</th><th>French equivalent</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">raw material</td><td>What the business buys and stocks</td><td><b>matière première</b></td></tr>
+              <tr><td class="mono">final product</td><td>What the business sells</td><td><b>produit fini</b></td></tr>
+              <tr><td class="mono">bill of materials (BOM)</td><td>The recipe linking a product to its materials and quantities</td><td><b>nomenclature</b> (or recette)</td></tr>
+              <tr><td class="mono">economic order quantity</td><td>Order size minimising ordering plus holding cost</td><td><b>quantité économique de commande</b> — also called the <b>formule de Wilson</b></td></tr>
+              <tr><td class="mono">reorder point</td><td>Stock level triggering a new purchase order</td><td><b>point de commande</b> / seuil de réapprovisionnement</td></tr>
+              <tr><td class="mono">holding cost</td><td>Annual cost of keeping one unit in stock</td><td><b>coût de possession</b> / coût de stockage</td></tr>
+              <tr><td class="mono">ordering cost</td><td>Fixed cost per purchase order placed</td><td><b>coût de passation</b></td></tr>
+              <tr><td class="mono">stockout</td><td>Running out of a material, halting production</td><td><b>rupture de stock</b></td></tr>
+              <tr><td class="mono">days to stockout</td><td>Stock on hand divided by daily consumption</td><td><b>jours avant rupture</b> / couverture de stock</td></tr>
+              <tr><td class="mono">inventory turnover</td><td>How many times stock is consumed per year</td><td><b>rotation des stocks</b></td></tr>
+              <tr><td class="mono">slow mover</td><td>Item in the bottom quartile of turnover</td><td><b>article à rotation lente</b> / dormant</td></tr>
+              <tr><td class="mono">overstock</td><td>More than 180 days of stock on hand</td><td><b>surstock</b></td></tr>
+              <tr><td class="mono">lead time</td><td>Days between placing an order and receiving it</td><td><b>délai d'approvisionnement</b></td></tr>
+              <tr><td class="mono">COGS</td><td>Cost of goods sold, from frozen unit costs</td><td><b>coût des marchandises vendues</b></td></tr>
+              <tr><td class="mono">gross margin</td><td>(Revenue − COGS) ÷ Revenue</td><td><b>marge brute</b></td></tr>
+              <tr><td class="mono">demand forecasting</td><td>Predicting future sales from history</td><td><b>prévision de la demande</b></td></tr>
+              <tr><td class="mono">time series</td><td>Values indexed by regular time steps</td><td><b>série temporelle</b> / chronologique</td></tr>
+              <tr><td class="mono">confidence interval</td><td>Range containing the true value at a stated probability — 80% here</td><td><b>intervalle de confiance</b></td></tr>
+              <tr><td class="mono">MAPE</td><td>Mean absolute percentage error, the forecast accuracy metric</td><td><b>erreur absolue moyenne en pourcentage</b></td></tr>
+              <tr><td class="mono">RFM segmentation</td><td>Customer scoring on recency, frequency and monetary value</td><td><b>segmentation RFM</b> (récence, fréquence, montant)</td></tr>
+              <tr><td class="mono">cost snapshot</td><td>Unit cost frozen on the order line at import time</td><td><b>coût figé</b></td></tr>
+              <tr><td class="mono">endpoint</td><td>A single addressable HTTP route of the API</td><td><b>point d'accès</b> / route</td></tr>
+              <tr><td class="mono">dependency injection</td><td>Supplying a component's collaborators from outside it</td><td><b>injection de dépendance</b></td></tr>
+              <tr><td class="mono">migration</td><td>A versioned, scripted change to the database schema</td><td><b>migration de schéma</b></td></tr>
+              <tr><td class="mono">single-tenant</td><td>One deployment serves exactly one business</td><td><b>mono-locataire</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        <span>Compiled by repository audit · branch <b>main</b> · commit <b>9b4f74c</b></span>
+        <span>9 September 2026</span>
+      </footer>
+
+    </main>
+  </div>
+</div>

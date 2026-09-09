@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS raw_materials (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
+    external_id VARCHAR(100) UNIQUE,
     category VARCHAR(100),
     unit VARCHAR(50),
     cost_per_unit DECIMAL(10,2),
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS raw_material_inventory (
 CREATE TABLE IF NOT EXISTS final_products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
+    external_id VARCHAR(100) UNIQUE,
     category VARCHAR(100),
     unit_price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS final_products (
 CREATE TABLE IF NOT EXISTS recipes (
     id SERIAL PRIMARY KEY,
     product_id INT NOT NULL REFERENCES final_products(id) ON DELETE CASCADE,
+    external_id VARCHAR(100) UNIQUE,
     size VARCHAR(10),
     unit_cost DECIMAL(10,4) NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
